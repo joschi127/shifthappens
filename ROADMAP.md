@@ -46,3 +46,4 @@ Hier werden Ideen gesammelt, deren Umsetzung noch nicht feststeht, die aber Pote
 
 - **Schicht-Termine:** Möglichkeit, während einer Schicht spezifische Termine zu hinterlegen (z. B. "15:00 Uhr Gespräch mit Frau Z.").
 - **Schicht-Aufgaben:** Festhalten von Aufgaben, die innerhalb einer Schicht erledigt werden müssen (z. B. "Anruf bei Amt XY").
+- **Mini-Game:** Moorhuhn-ähnliches Mini-Game, um Wartezeiten zu überbrücken.
