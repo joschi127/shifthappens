@@ -3,6 +3,7 @@
 Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
 ## [Unreleased]
+- Idee für Betreuer-Memes (ähnlich Gentler Streak Visualisierungen) zum Ideen-Backlog der Roadmap hinzugefügt.
 - Moorhuhn-ähnliches Mini-Game zum Ideen-Backlog der Roadmap hinzugefügt.
 
 ### Fixed
