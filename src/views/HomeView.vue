@@ -57,13 +57,8 @@
           <ion-button expand="block" router-link="/shift-types">
             Schicht-Vorlagen verwalten
           </ion-button>
-          
-          <ion-button expand="block" fill="outline" color="secondary" @click="testDb">
-            Datenbank Test
-          </ion-button>
         </div>
         
-        <p v-if="dbStatus" class="ion-padding">{{ dbStatus }}</p>
       </div>
     </ion-content>
   </ion-page>
@@ -78,22 +73,7 @@ import {
   IonToolbar, 
   IonButton 
 } from '@ionic/vue';
-import { ref } from 'vue';
-import { db } from '../db';
 
-const dbStatus = ref('');
-
-const testDb = async () => {
-  try {
-    const id = await db.shifts.add({
-      name: 'Test Schicht',
-      date: new Date().toISOString()
-    });
-    dbStatus.value = `Erfolg! Schicht mit ID ${id} gespeichert.`;
-  } catch (e) {
-    dbStatus.value = `Fehler: ${e}`;
-  }
-};
 </script>
 
 <style scoped>
