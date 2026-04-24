@@ -44,7 +44,7 @@ Erweiterung um intelligente Features und Exporte.
 ## Ideen-Backlog (Zukunftsmusik)
 Hier werden Ideen gesammelt, deren Umsetzung noch nicht feststeht, die aber Potenzial für die Zukunft haben.
 
-- **Schicht-Termine:** Möglichkeit, während einer Schicht spezifische Termine zu hinterlegen (z. B. "15:00 Uhr Gespräch mit Frau Z.").
-- **Schicht-Aufgaben:** Festhalten von Aufgaben, die innerhalb einer Schicht erledigt werden müssen (z. B. "Anruf bei Amt XY").
+- **Schicht-Termine:** Möglichkeit, während einer Schicht spezifische Termine zu hinterlegen (z.B. "15:00 Uhr Gespräch mit Frau Z.").
+- **Schicht-Aufgaben:** Festhalten von Aufgaben, die innerhalb einer Schicht erledigt werden müssen (z.B. "Anruf bei Amt XY").
 - **Mini-Game:** Moorhuhn-ähnliches Mini-Game, um Wartezeiten zu überbrücken.
-- **Betreuer-Memes:** Passende Memes für die Betreuer-Arbeit (z. B. zur Beantwortung von Fragen wie "Wie hast du heute geschlafen?"). Ähnlich wie die Visualisierungen in Gentler Streak.
+- **Betreuer-Memes:** Passende Memes für die Betreuer-Arbeit (z.B. zur Beantwortung von Fragen wie "Wie hast du heute geschlafen?"). Ähnlich wie die Visualisierungen in Gentler Streak.
