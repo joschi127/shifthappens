@@ -5,6 +5,9 @@ Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentier
 ## [Unreleased]
 
 ### Added
+- Vite-Konfiguration: `--host` standardmäßig aktiviert, um die App im lokalen Netzwerk erreichbar zu machen (wichtig für Mobile-Tests).
+
+### Added
 - Detaillierte Aufschlüsselung der Arbeitszeit im Schicht-Typ-Editor:
   - Anzeige von Hauptschicht, Pause, Nachtbereitschaft und geteilter Schicht als Einzelwerte in der Zusammenfassung.
 - Anzeige der Gesamt-Arbeitszeit im Schicht-Typ-Editor:
