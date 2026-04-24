@@ -6,7 +6,7 @@ Diese Datei dokumentiert den geplanten Funktionsumfang und die Meilensteine des 
 Der Fokus liegt auf der soliden Grundfunktionalität für die Verwaltung persönlicher Schichtpläne.
 
 ### Kernfunktionen
-- **Schicht-Typen:** Definition eigener Schichten (Name, Farbe, Standardzeiten).
+- **Schicht-Typen:** Definition eigener Schichten (Name, Farbe, Standardzeiten, Nachtbereitschaft).
 - **Erweiterte Schicht-Optionen:**
   - Erfassung von Pausenzeiten (automatische Vorbelegung nach gesetzlichen Vorgaben).
   - Unterstützung für geteilte Schichten (Split-Shifts).
@@ -21,10 +21,12 @@ Der Fokus liegt auf der soliden Grundfunktionalität für die Verwaltung persön
 ### Technische Basis
 - **Offline First:** Volle Funktionalität ohne Internet via Dexie.js.
 - **Mobile First:** Optimiert für Smartphone-Browser und als PWA installierbar.
-- **Ionic UI:** Konsistentes, natives Look-and-Feel (Material Design Standardfarben).
+- **Ionic UI:** Konsistentes, natives Look-and-Feel (Vordefinierte Material Design Farbauswahl).
 - **Theme-Support:** Unterstützung für Dark Mode und Light Mode.
 - **Kalender-Konfiguration:** Wochenstart ist Montag.
 - **Gesetzliche Pausen (DE):** Automatische Berechnung der Mindestpausen (30 Min ab 6 Std, 45 Min ab 9 Std Arbeitszeit).
+- **Zeitformat:** Einheitliche Verwendung des 24-Stunden-Formats (HH:mm) für alle Zeitangaben.
+- **Sortierung:** Schicht-Vorlagen werden in Listenansichten automatisch primär nach Startzeit und sekundär nach Endzeit sortiert.
 
 ---
 
@@ -32,6 +34,7 @@ Der Fokus liegt auf der soliden Grundfunktionalität für die Verwaltung persön
 Erweiterung um intelligente Features und Exporte.
 
 ### Geplante Features
+- **Rufbereitschaft:** Möglichkeit spezielle Rufbereitschafts-Schichten anzulegen.
 - **Smart-Checkout:** Automatisches Erkennen des Schichtendes über den Gerätestandort beim Verlassen des Arbeitsortes (Heimweg-Erkennung).
 - **Export-Funktionen:** Export des Plans als PDF oder Text für Messenger-Dienste.
 - **Statistiken:** Auswertung von Arbeitszeiten und Schichtverteilungen.

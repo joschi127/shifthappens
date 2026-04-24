@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from '@ionic/vue-router';
 import { RouteRecordRaw } from 'vue-router';
 import HomeView from '../views/HomeView.vue';
+import ShiftTypeListView from '../views/ShiftTypeListView.vue';
+import ShiftTypeEditView from '../views/ShiftTypeEditView.vue';
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -11,6 +13,21 @@ const routes: Array<RouteRecordRaw> = [
     path: '/home',
     name: 'Home',
     component: HomeView
+  },
+  {
+    path: '/shift-types',
+    name: 'ShiftTypeList',
+    component: ShiftTypeListView
+  },
+  {
+    path: '/shift-types/new',
+    name: 'ShiftTypeNew',
+    component: ShiftTypeEditView
+  },
+  {
+    path: '/shift-types/edit/:id',
+    name: 'ShiftTypeEdit',
+    component: ShiftTypeEditView
   }
 ]
 

@@ -10,6 +10,10 @@ export interface ShiftType {
   splitStartTime?: string;
   splitEndTime?: string;
   defaultPauseMinutes?: number;
+  hasNightStandby: boolean;
+  nightStandbyStartTime?: string;
+  nightStandbyEndTime?: string;
+  nightStandbyPercentage?: number;
 }
 
 export interface Shift {
@@ -33,7 +37,7 @@ export class MyDatabase extends Dexie {
 
   constructor() {
     super('SchichtatorDB');
-    this.version(2).stores({
+    this.version(3).stores({
       shifts: '++id, date, shiftTypeId',
       shiftTypes: '++id, name'
     });

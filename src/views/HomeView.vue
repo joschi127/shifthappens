@@ -14,10 +14,20 @@
       </ion-header>
 
       <div id="container">
-        <strong>Hallo Welt!</strong>
-        <p>Dein persönlicher Schichtplaner ist bereit.</p>
-        <ion-button @click="testDb">Datenbank Test</ion-button>
-        <p v-if="dbStatus">{{ dbStatus }}</p>
+        <strong>Willkommen beim Schichtator</strong>
+        <p>Dein persönlicher Schichtplaner für die Hosentasche.</p>
+        
+        <div class="ion-padding">
+          <ion-button expand="block" router-link="/shift-types">
+            Schicht-Vorlagen verwalten
+          </ion-button>
+          
+          <ion-button expand="block" fill="outline" color="secondary" @click="testDb">
+            Datenbank Test
+          </ion-button>
+        </div>
+        
+        <p v-if="dbStatus" class="ion-padding">{{ dbStatus }}</p>
       </div>
     </ion-content>
   </ion-page>
