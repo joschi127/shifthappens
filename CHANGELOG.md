@@ -3,6 +3,10 @@
 Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
 ## [Unreleased]
+- Favicon und App Icon hinzugefügt:
+  - SVG-basiertes Icon (`public/icon.svg`) für optimale Skalierbarkeit erstellt.
+  - `index.html` und `vite.config.ts` (PWA) auf das neue Icon umgestellt.
+  - Maskable Icon Support für Android hinzugefügt.
 - Idee für Betreuer-Memes (ähnlich Gentler Streak Visualisierungen) zum Ideen-Backlog der Roadmap hinzugefügt.
 - Moorhuhn-ähnliches Mini-Game zum Ideen-Backlog der Roadmap hinzugefügt.
 
