@@ -23,11 +23,11 @@
               <h2>{{ type.name }}</h2>
               <p>
                 {{ formatTime(type.startTime) }} - {{ formatTime(type.endTime) }}
-                <span v-if="type.isSplitShift">
-                  &amp; {{ formatTime(type.splitStartTime) }} - {{ formatTime(type.splitEndTime) }}
+                <span v-if="type.isSplitShift" class="split-shift-badge">
+                  + {{ formatTime(type.splitStartTime) }} - {{ formatTime(type.splitEndTime) }}
                 </span>
                 <span v-if="type.hasNightStandby" class="night-standby-badge">
-                  + NB ({{ formatTime(type.nightStandbyStartTime) }}-{{ formatTime(type.nightStandbyEndTime) }})
+                  + NB ({{ formatTime(type.nightStandbyStartTime) }} - {{ formatTime(type.nightStandbyEndTime) }})
                 </span>
               </p>
             </ion-label>
@@ -141,9 +141,8 @@ onIonViewWillEnter(loadShiftTypes);
 </script>
 
 <style scoped>
+.split-shift-badge,
 .night-standby-badge {
-  font-size: 0.8em;
-  color: var(--ion-color-medium);
   margin-left: 4px;
 }
 </style>
