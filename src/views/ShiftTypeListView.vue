@@ -17,29 +17,32 @@
       </ion-header>
 
       <ion-list>
-        <ion-item-sliding v-for="type in shiftTypes" :key="type.id">
-          <ion-item :button="true" @click="editShiftType(type.id)">
-            <ion-label>
-              <h2>{{ type.name }}</h2>
-              <p>
-                {{ formatTime(type.startTime) }} - {{ formatTime(type.endTime) }}
-                <span v-if="type.isSplitShift" class="split-shift-badge">
-                  + {{ formatTime(type.splitStartTime) }} - {{ formatTime(type.splitEndTime) }}
-                </span>
-                <span v-if="type.hasNightStandby" class="night-standby-badge">
-                  + NB ({{ formatTime(type.nightStandbyStartTime) }} - {{ formatTime(type.nightStandbyEndTime) }})
-                </span>
-              </p>
-            </ion-label>
-            <div slot="end" :style="{ backgroundColor: type.color, width: '20px', height: '20px', borderRadius: '50%' }"></div>
-          </ion-item>
+        <ion-reorder-group :disabled="false" @ionItemReorder="handleReorder($event)">
+          <ion-item-sliding v-for="type in shiftTypes" :key="type.id">
+            <ion-item :button="true" @click="editShiftType(type.id)">
+              <ion-reorder slot="start"></ion-reorder>
+              <ion-label>
+                <h2>{{ type.name }}</h2>
+                <p>
+                  {{ formatTime(type.startTime) }} - {{ formatTime(type.endTime) }}
+                  <span v-if="type.isSplitShift" class="split-shift-badge">
+                    + {{ formatTime(type.splitStartTime) }} - {{ formatTime(type.splitEndTime) }}
+                  </span>
+                  <span v-if="type.hasNightStandby" class="night-standby-badge">
+                    + NB ({{ formatTime(type.nightStandbyStartTime) }} - {{ formatTime(type.nightStandbyEndTime) }})
+                  </span>
+                </p>
+              </ion-label>
+              <div slot="end" :style="{ backgroundColor: type.color, width: '20px', height: '20px', borderRadius: '50%' }"></div>
+            </ion-item>
 
-          <ion-item-options side="end">
-            <ion-item-option color="danger" @click="deleteShiftType(type.id!)">
-              Löschen
-            </ion-item-option>
-          </ion-item-options>
-        </ion-item-sliding>
+            <ion-item-options side="end">
+              <ion-item-option color="danger" @click="deleteShiftType(type.id!)">
+                Löschen
+              </ion-item-option>
+            </ion-item-options>
+          </ion-item-sliding>
+        </ion-reorder-group>
       </ion-list>
 
       <div v-if="shiftTypes.length === 0" class="ion-padding ion-text-center">
@@ -65,6 +68,8 @@ import {
   IonList,
   IonItem,
   IonLabel,
+  IonReorder,
+  IonReorderGroup,
   IonFab,
   IonFabButton,
   IonIcon,
@@ -98,18 +103,39 @@ const formatTime = (time?: string) => {
 
 const loadShiftTypes = async () => {
   const types = await db.shiftTypes.toArray();
-  // Nach Startzeit sortieren, dann nach Endzeit
-  shiftTypes.value = types.sort((a, b) => {
-    // Primär: Startzeit
-    const startCompare = a.startTime.localeCompare(b.startTime);
-    if (startCompare !== 0) return startCompare;
+  
+  // Falls order fehlt (z.B. fehlgeschlagene Migration), initialisieren
+  const missingOrder = types.some(t => t.order === undefined);
+  if (missingOrder) {
+    for (let i = 0; i < types.length; i++) {
+      if (types[i].order === undefined) {
+        types[i].order = i;
+        await db.shiftTypes.update(types[i].id!, { order: i });
+      }
+    }
+  }
 
-    // Sekundär: Endzeit (bei geteilten Schichten die letzte Endzeit)
-    const endA = a.isSplitShift && a.splitEndTime ? a.splitEndTime : a.endTime;
-    const endB = b.isSplitShift && b.splitEndTime ? b.splitEndTime : b.endTime;
-    
-    return endA.localeCompare(endB);
-  });
+  // Manuell nach order sortieren (robuster als orderBy falls Index Probleme macht)
+  shiftTypes.value = types.sort((a, b) => (a.order || 0) - (b.order || 0));
+};
+
+const handleReorder = async (event: any) => {
+  // Array lokal aktualisieren
+  const movedItem = shiftTypes.value.splice(event.detail.from, 1)[0];
+  shiftTypes.value.splice(event.detail.to, 0, movedItem);
+
+  // Reorder abschließen
+  event.detail.complete();
+
+  // In Datenbank speichern
+  try {
+    const updates = shiftTypes.value.map((type, index) => {
+      return db.shiftTypes.update(type.id!, { order: index });
+    });
+    await Promise.all(updates);
+  } catch (e) {
+    console.error('Fehler beim Speichern der Reihenfolge', e);
+  }
 };
 
 const editShiftType = (id?: number) => {

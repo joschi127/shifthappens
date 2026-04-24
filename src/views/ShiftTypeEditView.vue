@@ -224,6 +224,7 @@ const form = ref<ShiftType>({
   startTime: '08:00',
   endTime: '16:00',
   color: '#3880ff',
+  order: 0,
   isSplitShift: false,
   defaultPauseMinutes: 30,
   hasNightStandby: false,
@@ -280,7 +281,12 @@ const save = async () => {
       const id = parseInt(route.params.id as string);
       await db.shiftTypes.update(id, { ...form.value });
     } else {
-      await db.shiftTypes.add({ ...form.value });
+      // Höchsten order-Wert ermitteln
+      const types = await db.shiftTypes.toArray();
+      const nextOrder = types.length > 0 
+        ? Math.max(...types.map(t => t.order || 0)) + 1 
+        : 0;
+      await db.shiftTypes.add({ ...form.value, order: nextOrder });
     }
     router.back();
   } catch (e) {
