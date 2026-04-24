@@ -4,6 +4,17 @@ Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentier
 
 ## [Unreleased]
 
+### Fixed
+- Redundantes Theme-Umschalt-Icon entfernt: Der Button wurde im Desktop-Browser doppelt angezeigt, da er sowohl im Standard-Header als auch im Condensed-Header (iOS) vorhanden war.
+- Weiße Seite beim Start behoben: Ein `SyntaxError` wurde durch einen falschen Icon-Import (`sun` statt `sunny`) verursacht. Dies verhinderte das Laden der gesamten App.
+- Dark Mode CSS & Logik: Die Selektoren und der `themeService.ts` wurden auf den Ionic-Standard (`html.dark`) migriert, was nun zusammen mit dem JavaScript-Fix korrekt funktioniert.
+
+### Added
+- Dark Mode Unterstützung hinzugefügt:
+  - Umschalter in der `HomeView.vue` integriert.
+  - Theme-Definitionen in `src/theme/variables.css`.
+  - Dauerhafte Speicherung der Einstellung über `themeService.ts`.
+
 ### Changed
 - Schicht-Vorlagen: Die manuelle Sortierung wurde robuster gestaltet, um Probleme bei Datenbank-Upgrades zu vermeiden. Ein Bug wurde behoben, durch den die Liste unter bestimmten Umständen leer blieb.
 - Schicht-Vorlagen: Die automatische Sortierung nach Uhrzeit wurde entfernt. Stattdessen können Vorlagen nun manuell per Drag & Drop in der Liste umsortiert werden.

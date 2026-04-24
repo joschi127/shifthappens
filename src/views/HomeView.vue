@@ -3,6 +3,11 @@
     <ion-header :translucent="true">
       <ion-toolbar>
         <ion-title>Schichtator</ion-title>
+        <ion-buttons slot="end">
+          <ion-button @click="toggleDarkMode()">
+            <ion-icon slot="icon-only" :icon="isDarkMode ? sunny : moon"></ion-icon>
+          </ion-button>
+        </ion-buttons>
       </ion-toolbar>
     </ion-header>
 
@@ -71,8 +76,12 @@ import {
   IonPage, 
   IonTitle, 
   IonToolbar, 
-  IonButton 
+  IonButton,
+  IonButtons,
+  IonIcon
 } from '@ionic/vue';
+import { moon, sunny } from 'ionicons/icons';
+import { isDarkMode, toggleDarkMode } from '../services/themeService';
 
 </script>
 
