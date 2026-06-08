@@ -28,7 +28,7 @@
         </div>
 
         <!-- Kalender-Gitter -->
-        <div class="calendar-grid">
+        <div class="calendar-grid" ref="calendarGrid">
           <div 
             v-for="{ date, isCurrentMonth, isToday, dayNumber } in calendarDays" 
             :key="date"
@@ -116,7 +116,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { 
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, 
   IonButton, IonIcon, IonList, IonItem, IonLabel, IonNote, IonModal,
@@ -151,6 +151,8 @@ const shiftTypes = ref<ShiftType[]>([]);
 let shiftsObservable: any;
 let shiftTypesObservable: any;
 
+const calendarGrid = ref<HTMLElement | null>(null);
+
 onMounted(() => {
   shiftsObservable = liveQuery(() => db.shifts.toArray()).subscribe({
     next: (data) => shifts.value = data
@@ -158,11 +160,13 @@ onMounted(() => {
   shiftTypesObservable = liveQuery(() => db.shiftTypes.orderBy('order').toArray()).subscribe({
     next: (data) => shiftTypes.value = data
   });
-});
 
-onUnmounted(() => {
-  if (shiftsObservable) shiftsObservable.unsubscribe();
-  if (shiftTypesObservable) shiftTypesObservable.unsubscribe();
+  // Zellbreite berechnen und als CSS Variable setzen
+  // Wir nutzen nextTick und eine kleine Verzögerung, um sicherzustellen, dass das Layout gerendert ist
+  nextTick(() => {
+    setTimeout(updateCellWidth, 100);
+  });
+  window.addEventListener('resize', updateCellWidth);
 });
 
 const calendarDays = computed(() => {
@@ -214,6 +218,36 @@ const calendarDays = computed(() => {
   return days;
 });
 
+// Auch bei Änderungen der Kalendertage neu berechnen
+watch(calendarDays, () => {
+  nextTick(() => {
+    updateCellWidth();
+  });
+});
+
+onUnmounted(() => {
+  if (shiftsObservable) shiftsObservable.unsubscribe();
+  if (shiftTypesObservable) shiftTypesObservable.unsubscribe();
+  window.removeEventListener('resize', updateCellWidth);
+});
+
+const updateCellWidth = () => {
+  requestAnimationFrame(() => {
+    if (calendarGrid.value) {
+      const firstDay = calendarGrid.value.querySelector('.calendar-day');
+      if (firstDay) {
+        const width = (firstDay as HTMLElement).offsetWidth;
+        if (width > 0) {
+          calendarGrid.value.style.setProperty('--cell-width', `${width}px`);
+        } else {
+          // Falls immer noch 0, nochmal probieren
+          setTimeout(updateCellWidth, 200);
+        }
+      }
+    }
+  });
+};
+
 const selectedDayShifts = computed(() => {
   if (!selectedDate.value || !shifts.value) return [];
   return shifts.value.filter(s => s.date === selectedDate.value);
@@ -230,9 +264,20 @@ const getShiftsForDate = (date: string) => {
  * Prüft, ob eine Schicht (Haupt, Split oder Standby) über Mitternacht geht.
  */
 const isShiftCrossingMidnight = (shift: Shift) => {
-  const mainCrosses = crossesMidnight(shift.startTime, shift.endTime);
-  const splitCrosses = shift.isSplitShift && shift.splitStartTime && shift.splitEndTime ? crossesMidnight(shift.splitStartTime, shift.splitEndTime) : false;
-  const standbyCrosses = shift.isNightStandby && shift.nightStandbyStartTime && shift.nightStandbyEndTime ? crossesMidnight(shift.nightStandbyStartTime, shift.nightStandbyEndTime) : false;
+  const type = shiftTypes.value?.find(t => t.id === shift.shiftTypeId);
+  
+  // Zeiten von der Schicht oder als Fallback von der Vorlage
+  const startTime = shift.startTime;
+  const endTime = shift.endTime;
+  const splitStartTime = shift.splitStartTime || type?.splitStartTime;
+  const splitEndTime = shift.splitEndTime || type?.splitEndTime;
+  const standbyStartTime = shift.nightStandbyStartTime || type?.nightStandbyStartTime;
+  const standbyEndTime = shift.nightStandbyEndTime || type?.nightStandbyEndTime;
+
+  const mainCrosses = crossesMidnight(startTime, endTime);
+  const splitCrosses = shift.isSplitShift && splitStartTime && splitEndTime ? crossesMidnight(splitStartTime, splitEndTime) : false;
+  const standbyCrosses = shift.isNightStandby && standbyStartTime && standbyEndTime ? crossesMidnight(standbyStartTime, standbyEndTime) : false;
+  
   return mainCrosses || splitCrosses || standbyCrosses;
 };
 
@@ -350,7 +395,7 @@ const deleteShift = async (id: number) => {
   border: 0.5px solid var(--ion-color-step-100);
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   padding: 4px;
   background: var(--ion-background-color);
   position: relative;
@@ -385,15 +430,16 @@ const deleteShift = async (id: number) => {
 .day-number {
   font-size: 0.9rem;
   margin-bottom: 2px;
+  padding-left: 2px;
 }
 
 .shift-indicator-container {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 2px;
   width: 100%;
-  padding: 0 2px;
+  padding: 0 4px 0 2px;
 }
 
 .shift-indicator {
@@ -412,21 +458,10 @@ const deleteShift = async (id: number) => {
 }
 
 .shift-indicator.crosses-midnight {
-  width: 28px;
-  z-index: 1;
-  margin-right: -10px;
-  border-radius: 4px 2px 2px 4px;
-  box-shadow: 2px 0 4px rgba(0,0,0,0.2);
-}
-
-.shift-indicator.crosses-midnight::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 4px;
-  background: rgba(255,255,255,0.3);
+  width: calc(var(--cell-width, 61px) * 0.5 + 18px + 20px);
+  z-index: 5;
+  margin-right: calc((var(--cell-width, 61px) * 0.5 + 20px) * -1);
+  border-radius: 4px;
 }
 
 .selected-day-info h3 {

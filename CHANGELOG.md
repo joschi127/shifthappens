@@ -10,7 +10,14 @@ Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentier
 - **Kalender-Funktionen:**
   - Löschen von Schichten via Swipe (Sliding Item) in der Detailansicht des Tages mit Sicherheitsabfrage hinzugefügt.
 - **Kalender-Verbesserungen:**
-  - Optische Kennzeichnung von Nachtschichten: Statt eines separaten Indikators am Folgetag wird der Indikator am Originaltag nun verbreitert dargestellt, um den Übertrag in den nächsten Tag zu symbolisieren.
+  - Linksbündige Ausrichtung: Die Kalendertage (Datumszahlen) und Schicht-Indikatoren sind nun konsistent linksbündig ausgerichtet, um ein modernes und aufgeräumtes Layout zu gewährleisten.
+  - Optische Verfeinerung: Der Schatten und der helle Streifen am rechten Rand der Nachtschicht-Indikatoren wurden entfernt und der Eckenradius vereinheitlicht, um ein flacheres Design zu erzielen.
+  - Layout-Korrektur für Nachtschichten: Die Indikatoren werden nun linksbündig ausgerichtet und der negative Margin korrigiert, um eine präzise Überlappung in den Folgetag zu gewährleisten und ein Verschieben nach links zu verhindern.
+  - Bugfix: Ein Initialisierungsfehler (`ReferenceError`) im Kalender wurde behoben, indem die Definition von `calendarDays` vor den darauf zugreifenden `watch` verschoben wurde.
+  - Bugfix: Die Berechnung der Zellbreite im Kalender wurde robuster gestaltet (Verwendung von `nextTick`, `requestAnimationFrame` und Fallback-Retry), um sicherzustellen, dass die CSS-Variable für Nachtschicht-Indikatoren korrekt gesetzt wird.
+  - Dynamische Breite für Nachtschicht-Indikatoren: Die Breite wurde weiter optimiert (+20px) und wird basierend auf der tatsächlichen Breite der Kalenderzellen berechnet, damit der Indikator konsistent bis in den nächsten Tag ragt (Default-Fallbeback auf 61px optimiert für iPhone 14).
+  - Optische Kennzeichnung von Nachtschichten: Die Indikatoren für Nachtschichten ragen nun deutlich in den Folgetag hinein, um den Überhang besser zu visualisieren.
+  - Bugfix: Die Erkennung von Nachtschichten wurde robuster gestaltet, indem bei fehlenden Zeitangaben an der Schicht automatisch auf die Werte der zugehörigen Vorlage zurückgegriffen wird.
   - Bugfix: Die `nightStandbyEndTime` wird nun berücksichtigt, wenn eine Schicht über Mitternacht geht und keine `splitEndTime` gesetzt ist.
   - Bugfix: Die `splitEndTime` bei geteilten Schichten wird nun korrekt berücksichtigt, wenn eine Schicht über Mitternacht geht.
   - Markierung des aktuell ausgewählten Tages in der Monatsansicht zur besseren Orientierung hinzugefügt.
