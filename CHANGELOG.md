@@ -11,8 +11,8 @@ Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentier
   - Löschen von Schichten via Swipe (Sliding Item) in der Detailansicht des Tages mit Sicherheitsabfrage hinzugefügt.
 - **Kalender-Verbesserungen:**
   - Linksbündige Ausrichtung: Die Kalendertage (Datumszahlen) und Schicht-Indikatoren sind nun konsistent linksbündig ausgerichtet, um ein modernes und aufgeräumtes Layout zu gewährleisten.
-  - Optische Verfeinerung: Der Schatten und der helle Streifen am rechten Rand der Nachtschicht-Indikatoren wurden entfernt und der Eckenradius vereinheitlicht, um ein flacheres Design zu erzielen.
-  - Layout-Korrektur für Nachtschichten: Die Indikatoren werden nun linksbündig ausgerichtet und der negative Margin korrigiert, um eine präzise Überlappung in den Folgetag zu gewährleisten und ein Verschieben nach links zu verhindern.
+  - Optische Verfeinerung: Der Schatten und der helle Streifen am rechten Rand der Nachtschicht-Indikatoren wurden entfernt und der Eckenradius vereinheitlicht. Zudem wurde ein linker Einzug (8px) für Nachtschichten hinzugefügt, um den späten Schichtbeginn visuell zu verdeutlichen.
+  - Layout-Korrektur für Nachtschichten: Die Indikatoren werden nun linksbündig ausgerichtet (mit leichtem Einzug für Nachtschichten) und der negative Margin korrigiert, um eine präzise Überlappung in den Folgetag zu gewährleisten.
   - Bugfix: Ein Initialisierungsfehler (`ReferenceError`) im Kalender wurde behoben, indem die Definition von `calendarDays` vor den darauf zugreifenden `watch` verschoben wurde.
   - Bugfix: Die Berechnung der Zellbreite im Kalender wurde robuster gestaltet (Verwendung von `nextTick`, `requestAnimationFrame` und Fallback-Retry), um sicherzustellen, dass die CSS-Variable für Nachtschicht-Indikatoren korrekt gesetzt wird.
   - Dynamische Breite für Nachtschicht-Indikatoren: Die Breite wurde weiter optimiert (+20px) und wird basierend auf der tatsächlichen Breite der Kalenderzellen berechnet, damit der Indikator konsistent bis in den nächsten Tag ragt (Default-Fallbeback auf 61px optimiert für iPhone 14).
