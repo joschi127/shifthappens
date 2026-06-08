@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from '@ionic/vue-router';
 import { RouteRecordRaw } from 'vue-router';
 import HomeView from '../views/HomeView.vue';
+import CalendarView from '../views/CalendarView.vue';
 import ShiftTypeListView from '../views/ShiftTypeListView.vue';
 import ShiftTypeEditView from '../views/ShiftTypeEditView.vue';
 import SettingsView from '../views/SettingsView.vue';
@@ -8,12 +9,17 @@ import SettingsView from '../views/SettingsView.vue';
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
-    redirect: '/home'
+    redirect: '/calendar'
   },
   {
     path: '/home',
     name: 'Home',
     component: HomeView
+  },
+  {
+    path: '/calendar',
+    name: 'Calendar',
+    component: CalendarView
   },
   {
     path: '/shift-types',

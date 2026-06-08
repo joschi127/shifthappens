@@ -64,3 +64,39 @@ export const formatToHHmm = (time?: string): string => {
   }
   return time;
 };
+
+/**
+ * Prüft, ob eine Schicht (oder ein Teil davon) über Mitternacht geht.
+ */
+export const crossesMidnight = (startTime: string, endTime: string): boolean => {
+  const start = formatToHHmm(startTime);
+  const end = formatToHHmm(endTime);
+
+  const [startH, startM] = start.split(':').map(Number);
+  const [endH, endM] = end.split(':').map(Number);
+
+  const startMinutes = startH * 60 + startM;
+  const endMinutes = endH * 60 + endM;
+
+  return endMinutes < startMinutes;
+};
+
+/**
+ * Gibt das Datum des nächsten Tages als ISO-String zurück.
+ */
+export const getNextDayISO = (dateStr: string): string => {
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + 1);
+  return toISODateString(d);
+};
+
+/**
+ * Konvertiert ein Date-Objekt sicher in einen ISO-Datum-String (YYYY-MM-DD),
+ * ohne Probleme mit Zeitzonen-Verschiebungen.
+ */
+export const toISODateString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};

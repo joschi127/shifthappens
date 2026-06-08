@@ -62,7 +62,10 @@
         <p>Dein persönlicher Schichtplaner für die Hosentasche.</p>
         
         <div class="ion-padding">
-          <ion-button expand="block" router-link="/shift-types">
+          <ion-button expand="block" router-link="/calendar">
+            Zum Kalender
+          </ion-button>
+          <ion-button expand="block" fill="outline" router-link="/shift-types">
             Schicht-Vorlagen verwalten
           </ion-button>
         </div>

@@ -26,6 +26,8 @@ export interface Shift {
   endTime: string;
   pauseMinutes: number;
   isNightStandby: boolean;
+  nightStandbyStartTime?: string;
+  nightStandbyEndTime?: string;
   notes: string;
   isSplitShift: boolean;
   splitStartTime?: string;

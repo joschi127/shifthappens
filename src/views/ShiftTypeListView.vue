@@ -38,7 +38,7 @@
 
             <ion-item-options side="end">
               <ion-item-option color="danger" @click="deleteShiftType(type.id!)">
-                Löschen
+                <ion-icon slot="icon-only" :icon="trashOutline"></ion-icon>
               </ion-item-option>
             </ion-item-options>
           </ion-item-sliding>
@@ -81,7 +81,7 @@ import {
   alertController,
   onIonViewWillEnter
 } from '@ionic/vue';
-import { add } from 'ionicons/icons';
+import { add, trashOutline } from 'ionicons/icons';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { db, ShiftType } from '../db';

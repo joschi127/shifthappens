@@ -3,6 +3,28 @@
 Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
 ## [Unreleased]
+- **Schicht-Vorlagen:**
+  - Lösch-Button in der Listenansicht durch ein Trash-Icon ersetzt (UI-Konsistenz zum Kalender).
+- **Navigation:**
+  - Back-Button in `CalendarView.vue` hinzugefügt, um die Rückkehr zur Startseite zu ermöglichen.
+- **Kalender-Funktionen:**
+  - Löschen von Schichten via Swipe (Sliding Item) in der Detailansicht des Tages mit Sicherheitsabfrage hinzugefügt.
+- **Kalender-Verbesserungen:**
+  - Optische Kennzeichnung von Nachtschichten: Statt eines separaten Indikators am Folgetag wird der Indikator am Originaltag nun verbreitert dargestellt, um den Übertrag in den nächsten Tag zu symbolisieren.
+  - Bugfix: Die `nightStandbyEndTime` wird nun berücksichtigt, wenn eine Schicht über Mitternacht geht und keine `splitEndTime` gesetzt ist.
+  - Bugfix: Die `splitEndTime` bei geteilten Schichten wird nun korrekt berücksichtigt, wenn eine Schicht über Mitternacht geht.
+  - Markierung des aktuell ausgewählten Tages in der Monatsansicht zur besseren Orientierung hinzugefügt.
+  - Schicht-Indikatoren im Kalender vergrößert (von kleinen Punkten zu quadratischen Badges).
+  - Anzeige der ersten zwei Buchstaben des Schicht-Namens in den Indikatoren zur besseren Unterscheidbarkeit.
+- **Kalender-Funktion:**
+  - Neue Kalenderansicht (`CalendarView.vue`) mit Monatsansicht hinzugefügt.
+  - Unterstützung für Wochenstart am Montag.
+  - Farblich markierte Indikatoren für eingetragene Schichten im Kalender.
+  - Möglichkeit, Schichten direkt über den Kalender hinzuzufügen (basierend auf Vorlagen).
+  - Löschen von Schichten via Swipe (Sliding Item) in der Detailansicht des Tages.
+- **Navigation:**
+  - Kalender ist nun die primäre Einstiegsseite.
+  - Home-View um Button zum Kalender erweitert.
 - **Daten-Backup (Import/Export):**
   - Neue Einstellungsseite (`SettingsView.vue`) mit Funktionen zur Datensicherung hinzugefügt.
   - Export-Funktion: Alle Schichten und Vorlagen können als JSON-Datei heruntergeladen werden.
@@ -16,6 +38,8 @@ Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentier
 - Moorhuhn-ähnliches Mini-Game zum Ideen-Backlog der Roadmap hinzugefügt.
 
 ### Fixed
+- Fehler bei der Datumsauswahl im Kalender behoben: Die Verwendung von `toISOString()` führte aufgrund von Zeitzonen-Offsets dazu, dass beim Anklicken eines Tages oft der vorherige Tag ausgewählt wurde. Dies wurde durch eine neue Utility-Funktion `toISODateString` korrigiert, die das Datum lokal formatiert.
+- Import-Fehler in `CalendarView.vue` behoben: Die Abhängigkeit `@vueuse/rxjs` wurde entfernt und durch eine direkte Subscription auf `liveQuery` ersetzt, um externe Abhängigkeiten zu minimieren und Installationsprobleme zu vermeiden.
 - Fehlerhafter Icon-Import in `SettingsView.vue` behoben: `uploadOutline` existiert nicht in Ionicons und wurde durch `cloudUploadOutline` (und `cloudDownloadOutline` für Konsistenz) ersetzt.
 - Redundantes Theme-Umschalt-Icon entfernt: Der Button wurde im Desktop-Browser doppelt angezeigt, da er sowohl im Standard-Header als auch im Condensed-Header (iOS) vorhanden war.
 - Weiße Seite beim Start behoben: Ein `SyntaxError` wurde durch einen falschen Icon-Import (`sun` statt `sunny`) verursacht. Dies verhinderte das Laden der gesamten App.
