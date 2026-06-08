@@ -420,17 +420,17 @@ const deleteShift = async (id: number) => {
   background: var(--ion-color-primary);
   color: var(--ion-color-primary-contrast);
   border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .day-number {
   font-size: 0.9rem;
   margin-bottom: 2px;
-  padding-left: 2px;
+  min-width: 24px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: start;
+  padding: 5px;
 }
 
 .shift-indicator-container {
@@ -439,7 +439,7 @@ const deleteShift = async (id: number) => {
   justify-content: flex-start;
   gap: 2px;
   width: 100%;
-  padding: 0 4px 0 2px;
+  padding: 0 4px 0 0;
 }
 
 .shift-indicator {
@@ -460,7 +460,7 @@ const deleteShift = async (id: number) => {
 .shift-indicator.crosses-midnight {
   width: calc(var(--cell-width, 61px) * 0.5 + 18px + 10px);
   z-index: 5;
-  margin-left: 12px;
+  margin-left: 10px;
   margin-right: calc((var(--cell-width, 61px) * 0.5 + 10px + 10px) * -1);
   border-radius: 4px;
 }

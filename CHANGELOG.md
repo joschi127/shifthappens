@@ -10,6 +10,8 @@ Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentier
 - **Kalender-Funktionen:**
   - Löschen von Schichten via Swipe (Sliding Item) in der Detailansicht des Tages mit Sicherheitsabfrage hinzugefügt.
 - **Kalender-Verbesserungen:**
+  - Bugfix: Layout-Stabilität und Ausrichtung im Kalender weiter verfeinert. Die Paddings von Datumszahlen und Schicht-Indikatoren wurden synchronisiert, um eine exakte vertikale Ausrichtung zu gewährleisten.
+  - Bugfix: Layout-Stabilität bei der Markierung des aktuellen Tages verbessert. Durch die Definition fester Dimensionen für die Datumsanzeige wird verhindert, dass die Schicht-Indikatoren bei der Hervorhebung von "Heute" verschoben werden.
   - Linksbündige Ausrichtung: Die Kalendertage (Datumszahlen) und Schicht-Indikatoren sind nun konsistent linksbündig ausgerichtet, um ein modernes und aufgeräumtes Layout zu gewährleisten.
   - Optische Verfeinerung: Der Schatten und der helle Streifen am rechten Rand der Nachtschicht-Indikatoren wurden entfernt und der Eckenradius vereinheitlicht. Zudem wurde ein linker Einzug (8px) für Nachtschichten hinzugefügt, um den späten Schichtbeginn visuell zu verdeutlichen.
   - Layout-Korrektur für Nachtschichten: Die Indikatoren werden nun linksbündig ausgerichtet (mit leichtem Einzug für Nachtschichten) und der negative Margin korrigiert, um eine präzise Überlappung in den Folgetag zu gewährleisten.
