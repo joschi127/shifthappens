@@ -4,6 +4,9 @@
       <ion-toolbar>
         <ion-title>Schichtator</ion-title>
         <ion-buttons slot="end">
+          <ion-button router-link="/settings">
+            <ion-icon slot="icon-only" :icon="settingsOutline"></ion-icon>
+          </ion-button>
           <ion-button @click="toggleDarkMode()">
             <ion-icon slot="icon-only" :icon="isDarkMode ? sunny : moon"></ion-icon>
           </ion-button>
@@ -80,7 +83,7 @@ import {
   IonButtons,
   IonIcon
 } from '@ionic/vue';
-import { moon, sunny } from 'ionicons/icons';
+import { moon, sunny, settingsOutline } from 'ionicons/icons';
 import { isDarkMode, toggleDarkMode } from '../services/themeService';
 
 </script>

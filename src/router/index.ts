@@ -3,6 +3,7 @@ import { RouteRecordRaw } from 'vue-router';
 import HomeView from '../views/HomeView.vue';
 import ShiftTypeListView from '../views/ShiftTypeListView.vue';
 import ShiftTypeEditView from '../views/ShiftTypeEditView.vue';
+import SettingsView from '../views/SettingsView.vue';
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -28,6 +29,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/shift-types/edit/:id',
     name: 'ShiftTypeEdit',
     component: ShiftTypeEditView
+  },
+  {
+    path: '/settings',
+    name: 'Settings',
+    component: SettingsView
   }
 ]
 

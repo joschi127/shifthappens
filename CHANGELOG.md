@@ -3,6 +3,11 @@
 Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
 ## [Unreleased]
+- **Daten-Backup (Import/Export):**
+  - Neue Einstellungsseite (`SettingsView.vue`) mit Funktionen zur Datensicherung hinzugefügt.
+  - Export-Funktion: Alle Schichten und Vorlagen können als JSON-Datei heruntergeladen werden.
+  - Import-Funktion: Wiederherstellung von Daten aus einer Backup-Datei mit Sicherheitsabfrage.
+  - Zugriff über ein neues Einstellungen-Icon in der Toolbar der Startseite.
 - Favicon und App Icon hinzugefügt:
   - SVG-basiertes Icon (`public/icon.svg`) für optimale Skalierbarkeit erstellt.
   - `index.html` und `vite.config.ts` (PWA) auf das neue Icon umgestellt.
@@ -11,6 +16,7 @@ Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentier
 - Moorhuhn-ähnliches Mini-Game zum Ideen-Backlog der Roadmap hinzugefügt.
 
 ### Fixed
+- Fehlerhafter Icon-Import in `SettingsView.vue` behoben: `uploadOutline` existiert nicht in Ionicons und wurde durch `cloudUploadOutline` (und `cloudDownloadOutline` für Konsistenz) ersetzt.
 - Redundantes Theme-Umschalt-Icon entfernt: Der Button wurde im Desktop-Browser doppelt angezeigt, da er sowohl im Standard-Header als auch im Condensed-Header (iOS) vorhanden war.
 - Weiße Seite beim Start behoben: Ein `SyntaxError` wurde durch einen falschen Icon-Import (`sun` statt `sunny`) verursacht. Dies verhinderte das Laden der gesamten App.
 - Dark Mode CSS & Logik: Die Selektoren und der `themeService.ts` wurden auf den Ionic-Standard (`html.dark`) migriert, was nun zusammen mit dem JavaScript-Fix korrekt funktioniert.

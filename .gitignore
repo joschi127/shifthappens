@@ -56,3 +56,6 @@ Thumbs.db
 # Vite
 manifest.json
 browserconfig.xml
+
+# Backup files (test data)
+/backup_files
