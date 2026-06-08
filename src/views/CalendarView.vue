@@ -445,6 +445,7 @@ const deleteShift = async (id: number) => {
 .shift-indicator {
   width: 18px;
   height: 18px;
+  margin-left: 4px;
   border-radius: 4px;
   font-size: 9px;
   display: flex;
@@ -460,7 +461,7 @@ const deleteShift = async (id: number) => {
 .shift-indicator.crosses-midnight {
   width: calc(var(--cell-width, 61px) * 0.5 + 18px + 10px);
   z-index: 5;
-  margin-left: 10px;
+  margin-left: 15px;
   margin-right: calc((var(--cell-width, 61px) * 0.5 + 10px + 10px) * -1);
   border-radius: 4px;
 }
