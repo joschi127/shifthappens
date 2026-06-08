@@ -250,14 +250,16 @@ const updateCellWidth = () => {
 
 const selectedDayShifts = computed(() => {
   if (!selectedDate.value || !shifts.value) return [];
-  return shifts.value.filter(s => s.date === selectedDate.value);
+  const dayShifts = shifts.value.filter(s => s.date === selectedDate.value);
+  return dayShifts.sort((a, b) => a.startTime.localeCompare(b.startTime));
 });
 
 const getShiftsForDate = (date: string) => {
   if (!shifts.value) return [];
   
-  // Nur direkte Schichten an diesem Tag zurückgeben
-  return shifts.value.filter(s => s.date === date);
+  // Schichten an diesem Tag zurückgeben und nach Startzeit sortieren
+  const dayShifts = shifts.value.filter(s => s.date === date);
+  return dayShifts.sort((a, b) => a.startTime.localeCompare(b.startTime));
 };
 
 /**
@@ -412,8 +414,9 @@ const deleteShift = async (id: number) => {
 }
 
 .calendar-day.selected {
-  border: 2px solid var(--ion-color-primary);
-  z-index: 1;
+  outline: 2px solid var(--ion-color-primary);
+  outline-offset: -2px;
+  z-index: 10;
 }
 
 .calendar-day.today .day-number {
