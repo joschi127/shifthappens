@@ -130,6 +130,7 @@ import {
   addOutline, trashOutline, locateOutline 
 } from 'ionicons/icons';
 import { db, Shift, ShiftType } from '../db';
+import { markLocalModified } from '../services/googleDriveService';
 import { liveQuery } from 'dexie';
 import { toISODateString, crossesMidnight, getNextDayISO } from '../utils/timeUtils';
 
@@ -353,6 +354,7 @@ const addShiftFromType = async (type: ShiftType) => {
   };
   
   await db.shifts.add(newShift);
+  markLocalModified();
   isModalOpen.value = false;
 };
 
@@ -370,6 +372,7 @@ const deleteShift = async (id: number) => {
         role: 'destructive',
         handler: async () => {
           await db.shifts.delete(id);
+          markLocalModified();
         }
       }
     ]

@@ -27,7 +27,48 @@
 
       <ion-list :inset="true">
         <ion-list-header>
-          <ion-label>Datensicherung</ion-label>
+          <ion-label>Google Drive Synchronisation</ion-label>
+        </ion-list-header>
+
+        <ion-item>
+          <ion-icon slot="start" :icon="cloudDownloadOutline"></ion-icon>
+          <ion-label>
+            <h2>Verbindungsstatus</h2>
+            <p>{{ isConnected ? `Verbunden als ${userEmail}` : 'Nicht verbunden' }}</p>
+          </ion-label>
+          <ion-button slot="end" :color="isConnected ? 'danger' : 'primary'" size="small" @click="handleGoogleAuth">
+            {{ isConnected ? 'Trennen' : 'Verbinden' }}
+          </ion-button>
+        </ion-item>
+
+        <ion-item>
+          <ion-icon slot="start" :icon="syncOutline"></ion-icon>
+          <ion-label>
+            <h2>Automatische Synchronisierung</h2>
+            <p>Regelmäßiger Sync im Hintergrund</p>
+          </ion-label>
+          <ion-toggle slot="end" :checked="autoSyncEnabled" @ionChange="onToggleAutoSync"></ion-toggle>
+        </ion-item>
+
+        <ion-item button @click="handleManualSync" :disabled="!isConnected">
+          <ion-icon slot="start" :icon="refreshOutline"></ion-icon>
+          <ion-label>
+            <h2>Jetzt synchronisieren</h2>
+            <p>Manuellen Sync mit Google Drive ausführen</p>
+          </ion-label>
+        </ion-item>
+
+        <ion-item>
+          <ion-label>
+            <h2>Letzte Synchronisation</h2>
+            <p>{{ lastSyncTime ? `${lastSyncTime} (${lastSyncDirection})` : 'Noch nie' }}</p>
+          </ion-label>
+        </ion-item>
+      </ion-list>
+
+      <ion-list :inset="true">
+        <ion-list-header>
+          <ion-label>Datensicherung (Lokal)</ion-label>
         </ion-list-header>
 
         <ion-item button @click="handleExport">
@@ -78,14 +119,33 @@ import {
   IonButtons,
   IonBackButton,
   IonToggle,
+  IonButton,
   alertController,
   loadingController,
   toastController
 } from '@ionic/vue';
-import { cloudDownloadOutline, cloudUploadOutline, moon, sunny } from 'ionicons/icons';
+import {
+  cloudDownloadOutline,
+  cloudUploadOutline,
+  moon,
+  sunny,
+  syncOutline,
+  refreshOutline
+} from 'ionicons/icons';
 import { ref } from 'vue';
 import { exportDatabase, importDatabase } from '../services/dbExportService';
 import { isDarkMode, toggleDarkMode } from '../services/themeService';
+import {
+  isConnected,
+  userEmail,
+  autoSyncEnabled,
+  lastSyncTime,
+  lastSyncDirection,
+  setAutoSync,
+  loginToGoogle,
+  logoutFromGoogle,
+  syncNow
+} from '../services/googleDriveService';
 
 const fileInput = ref<HTMLInputElement | null>(null);
 
@@ -93,6 +153,49 @@ const onToggleDark = (event: CustomEvent) => {
   if (isDarkMode.value !== event.detail.checked) {
     toggleDarkMode();
   }
+};
+
+const onToggleAutoSync = (event: CustomEvent) => {
+  setAutoSync(event.detail.checked);
+};
+
+const handleGoogleAuth = async () => {
+  if (isConnected.value) {
+    logoutFromGoogle();
+    const toast = await toastController.create({
+      message: 'Von Google Drive getrennt.',
+      duration: 2000,
+      color: 'medium'
+    });
+    await toast.present();
+  } else {
+    const success = await loginToGoogle();
+    if (success) {
+      const toast = await toastController.create({
+        message: `Verbunden als ${userEmail.value}`,
+        duration: 2000,
+        color: 'success'
+      });
+      await toast.present();
+    }
+  }
+};
+
+const handleManualSync = async () => {
+  const loading = await loadingController.create({
+    message: 'Synchronisiere mit Google Drive...'
+  });
+  await loading.present();
+
+  const result = await syncNow(true);
+  await loading.dismiss().catch(() => {});
+
+  const toast = await toastController.create({
+    message: result.message,
+    duration: 3000,
+    color: result.success ? 'success' : 'danger'
+  });
+  await toast.present();
 };
 
 const triggerFileInput = () => {
@@ -154,7 +257,6 @@ const handleImport = async (event: Event) => {
                 color: 'success'
               });
               await toast.present();
-              // Reset file input
               target.value = '';
             } else {
               const errorAlert = await alertController.create({

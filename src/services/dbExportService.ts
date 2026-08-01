@@ -1,4 +1,5 @@
 import { db } from '../db';
+import { markLocalModified } from './googleDriveService';
 
 export async function exportDatabase() {
   const shifts = await db.shifts.toArray();
@@ -40,6 +41,8 @@ export async function importDatabase(jsonString: string) {
       await db.shifts.bulkAdd(data.tables.shifts);
       await db.shiftTypes.bulkAdd(data.tables.shiftTypes);
     });
+
+    markLocalModified();
     
     return { success: true };
   } catch (error) {
