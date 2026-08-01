@@ -59,3 +59,6 @@ browserconfig.xml
 
 # Backup files (test data)
 /backup_files
+/.aider*
+!/.aider.conf.yml
+!/.aider.conventions.md

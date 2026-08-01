@@ -1,0 +1,26 @@
+no-gitignore: true
+gitignore: false
+auto-commits: false
+alias:
+  - "local:ollama/qwen3-coder:30b"
+  - "flash:gemini/gemini-3.5-flash"
+
+# 1. Use Architect mode to balance reasoning and local execution
+chat-mode: architect
+
+# 2. Architect model: Gemini Flash
+model: flash
+
+# 3. Editor model: Local Ollama running Qwen3-Coder:30b
+editor-model: local
+
+# 4. Explicitly force Gemini Flash to handle background tasks
+weak-model: flash
+
+# 5. Performance tunings for large local models
+map-tokens: 2048
+cache-prompts: true
+
+read:
+  - docs/guidelines.md
+  - .aider.conventions.md
