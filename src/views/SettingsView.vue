@@ -12,6 +12,21 @@
     <ion-content :fullscreen="true">
       <ion-list :inset="true">
         <ion-list-header>
+          <ion-label>Erscheinungsbild</ion-label>
+        </ion-list-header>
+
+        <ion-item button @click="toggleDarkMode">
+          <ion-icon slot="start" :icon="isDarkMode ? moon : sunny"></ion-icon>
+          <ion-label>
+            <h2>Dark Mode</h2>
+            <p>Zwischen hellem und dunklem Design umschalten.</p>
+          </ion-label>
+          <ion-toggle slot="end" :checked="isDarkMode" @click.stop @ionChange="onToggleDark"></ion-toggle>
+        </ion-item>
+      </ion-list>
+
+      <ion-list :inset="true">
+        <ion-list-header>
           <ion-label>Datensicherung</ion-label>
         </ion-list-header>
 
@@ -62,15 +77,23 @@ import {
   IonIcon,
   IonButtons,
   IonBackButton,
+  IonToggle,
   alertController,
   loadingController,
   toastController
 } from '@ionic/vue';
-import { cloudDownloadOutline, cloudUploadOutline } from 'ionicons/icons';
+import { cloudDownloadOutline, cloudUploadOutline, moon, sunny } from 'ionicons/icons';
 import { ref } from 'vue';
 import { exportDatabase, importDatabase } from '../services/dbExportService';
+import { isDarkMode, toggleDarkMode } from '../services/themeService';
 
 const fileInput = ref<HTMLInputElement | null>(null);
+
+const onToggleDark = (event: CustomEvent) => {
+  if (isDarkMode.value !== event.detail.checked) {
+    toggleDarkMode();
+  }
+};
 
 const triggerFileInput = () => {
   fileInput.value?.click();

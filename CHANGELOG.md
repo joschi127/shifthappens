@@ -3,8 +3,10 @@
 Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
 ## [Unreleased]
-- **Kalender-Funktionen:**
-  - Button zum Zurückspringen zum aktuellen Monat in `CalendarView.vue` aktualisiert: Verwendet nun ein Fadenkreuz-Icon (`locateOutline`) und ist zwischen den Vor- und Zurück-Pfeiltasten platziert.
+- **Navigation & Startseite:**
+  - Menüpunkt für die Einstellungen auf der Startseite (`HomeView.vue`) hinzugefügt.
+- **Einstellungen:**
+  - Dark Mode / Light Mode Umschalter in die Einstellungsseite (`SettingsView.vue`) integriert.
 - **Schicht-Vorlagen:**
   - Lösch-Button in der Listenansicht durch ein Trash-Icon ersetzt (UI-Konsistenz zum Kalender).
 - **Navigation:**

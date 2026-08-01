@@ -68,6 +68,9 @@
           <ion-button expand="block" fill="outline" router-link="/shift-types">
             Schicht-Vorlagen verwalten
           </ion-button>
+          <ion-button expand="block" fill="outline" router-link="/settings">
+            Einstellungen
+          </ion-button>
         </div>
         
       </div>

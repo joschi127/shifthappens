@@ -7,18 +7,17 @@
         </ion-buttons>
         <ion-title>{{ monthName }} {{ currentYear }}</ion-title>
         <ion-buttons slot="end">
-          <ion-button @click="prevMonth">
-            <ion-icon slot="icon-only" :icon="chevronBackOutline"></ion-icon>
-          </ion-button>
-          <ion-button @click="goToCurrentMonth" title="Zum aktuellen Monat">
-            <ion-icon slot="icon-only" :icon="locateOutline"></ion-icon>
-          </ion-button>
-          <ion-button @click="nextMonth">
-            <ion-icon slot="icon-only" :icon="chevronForwardOutline"></ion-icon>
-          </ion-button>
-          <ion-button router-link="/settings">
-            <ion-icon slot="icon-only" :icon="settingsOutline"></ion-icon>
-          </ion-button>
+          <div class="month-nav-group">
+            <ion-button @click="prevMonth" class="compact-nav-btn">
+              <ion-icon slot="icon-only" :icon="chevronBackOutline"></ion-icon>
+            </ion-button>
+            <ion-button @click="goToCurrentMonth" title="Zum aktuellen Monat" class="compact-nav-btn today-nav-btn">
+              <ion-icon slot="icon-only" :icon="locateOutline"></ion-icon>
+            </ion-button>
+            <ion-button @click="nextMonth" class="compact-nav-btn">
+              <ion-icon slot="icon-only" :icon="chevronForwardOutline"></ion-icon>
+            </ion-button>
+          </div>
         </ion-buttons>
       </ion-toolbar>
     </ion-header>
@@ -127,7 +126,7 @@ import {
   IonBackButton
 } from '@ionic/vue';
 import { 
-  settingsOutline, chevronBackOutline, chevronForwardOutline, 
+  chevronBackOutline, chevronForwardOutline, 
   addOutline, trashOutline, locateOutline 
 } from 'ionicons/icons';
 import { db, Shift, ShiftType } from '../db';
@@ -489,5 +488,30 @@ const deleteShift = async (id: number) => {
   height: 12px;
   border-radius: 50%;
   margin-right: 12px;
+}
+
+.month-nav-group {
+  display: flex;
+  align-items: center;
+  gap: 0px;
+}
+
+.compact-nav-btn {
+  --padding-start: 4px;
+  --padding-end: 4px;
+  --padding-top: 4px;
+  --padding-bottom: 4px;
+  margin: 0 1px;
+  height: 32px;
+}
+
+.today-nav-btn {
+  height: 28px;
+  --padding-start: 2px;
+  --padding-end: 2px;
+}
+
+.today-nav-btn ion-icon {
+  font-size: 16px;
 }
 </style>
