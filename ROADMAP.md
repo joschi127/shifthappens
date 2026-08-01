@@ -3,7 +3,7 @@
 Diese Datei dokumentiert den geplanten Funktionsumfang und die Meilensteine des Projekts.
 
 ## Version 1 (V1) - MVP (Minimum Viable Product)
-Der Fokus liegt auf der soliden Grundfunktionalität für die Verwaltung persönlicher Schichtpläne.
+Der Fokus liegt auf der soliden Grundfunktionalität für die Verwaltung persönlicher Schichtplänen.
 
 ### Kernfunktionen
 - **Schicht-Typen:** Definition eigener Schichten (Name, Farbe, Standardzeiten, Nachtbereitschaft).
@@ -34,6 +34,10 @@ Der Fokus liegt auf der soliden Grundfunktionalität für die Verwaltung persön
 Erweiterung um intelligente Features und Exporte.
 
 ### Geplante Features
+- **Google Drive Synchronisation & Kalender-Sharing:**
+  *Entscheidung: Google Drive wurde als primäre Cloud-Lösung gewählt (Vorteile gegenüber iCloud: Kostenlos für Entwickler, plattformübergreifend für Android/iOS/Web und einfache Freigabe von `.ics`-Dateien).*
+  - **Backup & Sync:** Serverlose Synchronisation der App-Daten über das versteckte Google Drive Anwendungsdatenverzeichnis (`appDataFolder`).
+  - **Kalender-Abonnement (.ics):** Generierung einer iCalendar-Datei (`.ics`) im regulären Google Drive des Nutzers mit öffentlichem Freigabelink zur Einbindung in Outlook, Apple Calendar oder Google Calendar. Automatische Neuerstellung bei Datenänderungen.
 - **Rufbereitschaft:** Möglichkeit spezielle Rufbereitschafts-Schichten anzulegen.
 - **Smart-Checkout:** Automatisches Erkennen des Schichtendes über den Gerätestandort beim Verlassen des Arbeitsortes (Heimweg-Erkennung).
 - **Export-Funktionen:** Export des Plans als PDF oder Text für Messenger-Dienste.
@@ -48,3 +52,4 @@ Hier werden Ideen gesammelt, deren Umsetzung noch nicht feststeht, die aber Pote
 - **Schicht-Aufgaben:** Festhalten von Aufgaben, die innerhalb einer Schicht erledigt werden müssen (z.B. "Anruf bei Amt XY").
 - **Mini-Game:** Moorhuhn-ähnliches Mini-Game, um Wartezeiten zu überbrücken.
 - **Betreuer-Memes:** Passende Memes für die Betreuer-Arbeit (z.B. zur Beantwortung von Fragen wie "Wie hast du heute geschlafen?"). Ähnlich wie die Visualisierungen in Gentler Streak.
+- **iCloud-Synchronisation:** Optionale Erweiterung für reine Apple-Nutzer über CloudKit Web Services. Aufgrund der hohen jährlichen Entwicklergebühren (99$/Jahr) und der komplexeren API-Struktur im Vergleich zu Google Drive ist dies jedoch vorerst zurückgestellt.
