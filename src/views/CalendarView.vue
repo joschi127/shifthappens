@@ -10,6 +10,9 @@
           <ion-button @click="prevMonth">
             <ion-icon slot="icon-only" :icon="chevronBackOutline"></ion-icon>
           </ion-button>
+          <ion-button @click="goToCurrentMonth" title="Zum aktuellen Monat">
+            <ion-icon slot="icon-only" :icon="locateOutline"></ion-icon>
+          </ion-button>
           <ion-button @click="nextMonth">
             <ion-icon slot="icon-only" :icon="chevronForwardOutline"></ion-icon>
           </ion-button>
@@ -125,7 +128,7 @@ import {
 } from '@ionic/vue';
 import { 
   settingsOutline, chevronBackOutline, chevronForwardOutline, 
-  addOutline, trashOutline 
+  addOutline, trashOutline, locateOutline 
 } from 'ionicons/icons';
 import { db, Shift, ShiftType } from '../db';
 import { liveQuery } from 'dexie';
@@ -295,6 +298,13 @@ const getShiftShortName = (shift: Shift) => {
 
 const selectDay = (date: string) => {
   selectedDate.value = date;
+};
+
+const goToCurrentMonth = () => {
+  const now = new Date();
+  currentMonth.value = now.getMonth();
+  currentYear.value = now.getFullYear();
+  selectedDate.value = toISODateString(now);
 };
 
 const prevMonth = () => {
