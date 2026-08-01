@@ -98,7 +98,7 @@ async function fetchUserInfo() {
   }
 }
 
-export async function loginToGoogle(): Promise<boolean> {
+export async function loginToGoogle(promptConsent = false): Promise<boolean> {
   if (!clientId.value || clientId.value.trim() === '') {
     const alert = await alertController.create({
       header: 'Google Client ID fehlt',
@@ -137,7 +137,13 @@ export async function loginToGoogle(): Promise<boolean> {
         resolve(true);
       }
     };
-    tokenClient.requestAccessToken({ prompt: 'consent' });
+    const options: any = {};
+    if (promptConsent) {
+      options.prompt = 'consent';
+    } else {
+      options.prompt = '';
+    }
+    tokenClient.requestAccessToken(options);
   });
 }
 

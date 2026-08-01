@@ -169,7 +169,7 @@ const handleGoogleAuth = async () => {
     });
     await toast.present();
   } else {
-    const success = await loginToGoogle();
+    const success = await loginToGoogle(true);
     if (success) {
       const toast = await toastController.create({
         message: `Verbunden als ${userEmail.value}`,
