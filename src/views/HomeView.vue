@@ -78,7 +78,17 @@
         </div>
         <strong>Willkommen bei ShiftHappens</strong>
         <p>Dein persönlicher Schichtplaner für die Hosentasche.</p>
-        
+
+        <div class="ion-padding">
+          <div class="beta-notice">
+            <ion-icon :icon="warningOutline" class="beta-icon"></ion-icon>
+            <div class="beta-text">
+              <strong>Beta-Version</strong>
+              <p>Diese App befindet sich noch in der Entwicklung. Es kann zu Fehlern kommen und Daten können verloren gehen.</p>
+            </div>
+          </div>
+        </div>
+
         <div class="ion-padding">
           <ion-button expand="block" router-link="/calendar">
             Zum Kalender
@@ -117,7 +127,7 @@ import {
   IonIcon
 } from '@ionic/vue';
 import { alertController } from '@ionic/vue';
-import { moon, sunny, settingsOutline, downloadOutline } from 'ionicons/icons';
+import { moon, sunny, settingsOutline, downloadOutline, warningOutline } from 'ionicons/icons';
 import { computed } from 'vue';
 import { isDarkMode, toggleDarkMode } from '../services/themeService';
 import { canInstall, isIos, promptInstall } from '../services/pwaInstallService';
@@ -156,6 +166,35 @@ const handleInstall = async () => {
   right: 0;
   top: 50%;
   transform: translateY(-50%);
+}
+
+.beta-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 196, 9, 0.12);
+  border: 1px solid rgba(255, 196, 9, 0.5);
+}
+
+.beta-icon {
+  font-size: 22px;
+  color: var(--ion-color-warning, #ffc409);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.beta-text strong {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.beta-text p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ion-color-medium, #92949c);
 }
 
 .logo-container {

@@ -3,6 +3,10 @@
 Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
 ## [Unreleased]
+- **Startseite:**
+  - Beta-Hinweis-Box auf der Startseite (`HomeView.vue`) hinzugefügt, die darauf hinweist, dass es sich noch um eine Beta-Version handelt, es zu Fehlern kommen und Daten verloren gehen können.
+- **Navigation:**
+  - Startseite ist nun wieder die primäre Einstiegsseite: Der Start-Redirect (`src/router/index.ts`) verweist von `/calendar` auf `/home`, damit man beim App-Start auf der Home-Ansicht landet.
 - **PWA-Installation ("Zum Startbildschirm hinzufügen"):**
   - Neuer Installations-Button auf der Startseite (`HomeView.vue`), der nur erscheint, wenn die App im Browser (nicht bereits als PWA) läuft. Der Button verwendet den `outline`-Stil (ohne gefüllte Hintergrundfarbe), damit die Beschriftung gut lesbar bleibt; das Download-Icon hebt ihn zusätzlich hervor.
   - Neuer Service `pwaInstallService.ts`, der das `beforeinstallprompt`-Event (Android/Chromium) abfängt und den Standalone-/Installationsstatus reaktiv bereitstellt.

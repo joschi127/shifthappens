@@ -9,7 +9,7 @@ import SettingsView from '../views/SettingsView.vue';
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
-    redirect: '/calendar'
+    redirect: '/home'
   },
   {
     path: '/home',
