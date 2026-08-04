@@ -2,7 +2,7 @@
   <ion-page>
     <ion-header :translucent="true">
       <ion-toolbar>
-        <ion-title>Schichtator</ion-title>
+        <ion-title>ShiftHappens</ion-title>
         <ion-buttons slot="end">
           <ion-button router-link="/settings">
             <ion-icon slot="icon-only" :icon="settingsOutline"></ion-icon>
@@ -17,7 +17,7 @@
     <ion-content :fullscreen="true">
       <ion-header collapse="condense">
         <ion-toolbar>
-          <ion-title size="large">Schichtator</ion-title>
+          <ion-title size="large">ShiftHappens</ion-title>
         </ion-toolbar>
       </ion-header>
 
@@ -55,10 +55,10 @@
             <line x1="75" y1="140" x2="125" y2="140" stroke="#1a1a1a" stroke-width="2" />
             
             <!-- Text/Punchline -->
-            <text x="100" y="185" font-family="Impact, sans-serif" font-size="16" fill="#1a1a1a" text-anchor="middle" letter-spacing="1">SCHICHT-TERMINATOR</text>
+            <text x="100" y="185" font-family="Impact, sans-serif" font-size="16" fill="#1a1a1a" text-anchor="middle" letter-spacing="1">SHIFT HAPPENS</text>
           </svg>
         </div>
-        <strong>Willkommen beim Schichtator</strong>
+        <strong>Willkommen bei ShiftHappens</strong>
         <p>Dein persönlicher Schichtplaner für die Hosentasche.</p>
         
         <div class="ion-padding">

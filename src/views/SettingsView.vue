@@ -97,7 +97,7 @@
 
       <div class="ion-padding">
         <p class="ion-text-center version-text">
-          Schichtator v1.0.0
+          ShiftHappens v1.0.0
         </p>
       </div>
     </ion-content>
@@ -261,7 +261,7 @@ const handleImport = async (event: Event) => {
             } else {
               const errorAlert = await alertController.create({
                 header: 'Fehler',
-                message: 'Der Import ist fehlgeschlagen. Bitte stellen Sie sicher, dass die Datei ein gültiges Schichtator-Backup ist.',
+                message: 'Der Import ist fehlgeschlagen. Bitte stellen Sie sicher, dass die Datei ein gültiges ShiftHappens-Backup ist.',
                 buttons: ['OK']
               });
               await errorAlert.present();

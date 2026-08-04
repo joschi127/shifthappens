@@ -39,7 +39,7 @@ export class MyDatabase extends Dexie {
   shiftTypes!: Table<ShiftType>;
 
   constructor() {
-    super('SchichtatorDB');
+    super('ShiftHappensDB');
     
     this.version(3).stores({
       shifts: '++id, date, shiftTypeId',

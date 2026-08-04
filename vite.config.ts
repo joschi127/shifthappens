@@ -12,8 +12,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
-        name: 'Schichtator',
-        short_name: 'Schichtator',
+        name: 'ShiftHappens',
+        short_name: 'ShiftHappens',
         description: 'Dein persönlicher Schichtplaner',
         theme_color: '#3880ff',
         icons: [

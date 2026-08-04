@@ -1,4 +1,4 @@
-# Roadmap "Schichtator"
+# Roadmap "ShiftHappens"
 
 Diese Datei dokumentiert den geplanten Funktionsumfang und die Meilensteine des Projekts.
 

@@ -7,7 +7,7 @@ const AUTO_SYNC_KEY = 'google_auto_sync';
 const LAST_SYNC_TIME_KEY = 'google_last_sync_time';
 const LAST_SYNC_ISO_KEY = 'google_last_sync_iso';
 const LAST_SYNC_DIR_KEY = 'google_last_sync_dir';
-const LOCAL_MODIFIED_KEY = 'schichtator_local_modified';
+const LOCAL_MODIFIED_KEY = 'shifthappens_local_modified';
 const CONNECTED_KEY = 'google_connected';
 const USER_EMAIL_KEY = 'google_user_email';
 
@@ -160,7 +160,7 @@ export function logoutFromGoogle() {
 async function findCloudFile(): Promise<{ id: string; modifiedTime: string } | null> {
   if (!accessToken) return null;
   try {
-    const query = encodeURIComponent("name = 'schichtator_backup.json' and trashed = false");
+    const query = encodeURIComponent("name = 'shifthappens_backup.json' and trashed = false");
     const res = await fetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${query}&fields=files(id,name,modifiedTime)`, {
       headers: { Authorization: `Bearer ${accessToken}` }
     });
@@ -199,7 +199,7 @@ async function uploadToCloud(fileId: string | null, jsonString: string): Promise
   if (!accessToken) return false;
   try {
     const metadata = {
-      name: 'schichtator_backup.json',
+      name: 'shifthappens_backup.json',
       parents: fileId ? undefined : ['appDataFolder']
     };
 

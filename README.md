@@ -1,4 +1,4 @@
-# Schichtator
+# ShiftHappens
 
 Eine mobile Progressive Web App (PWA) zur Verwaltung von persönlichen Dienst- und Schichtplänen.
 
