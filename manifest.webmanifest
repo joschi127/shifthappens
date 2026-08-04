@@ -1,0 +1,1 @@
+{"name":"ShiftHappens","short_name":"ShiftHappens","description":"Dein persönlicher Schichtplaner","start_url":"/shifthappens/","display":"standalone","background_color":"#ffffff","theme_color":"#3880ff","lang":"en","scope":"/shifthappens/","icons":[{"src":"icon.svg","sizes":"512x512","type":"image/svg+xml","purpose":"any maskable"}]}
