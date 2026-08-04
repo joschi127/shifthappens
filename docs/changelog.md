@@ -7,6 +7,7 @@ Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentier
   - Klargestellt, dass `.env` (ohne Secrets) ins Git eingecheckt wird und geheime Werte/Client-IDs in `.env.local` gehören – in `README.md` korrigiert und in `docs/guidelines.md` ergänzt.
   - GitHub-Pages-Deployment: `VITE_GOOGLE_CLIENT_ID` wird jetzt im Actions-Build aus einer Repository-Variable (`vars.VITE_GOOGLE_CLIENT_ID`) gesetzt; Anleitung in `README.md` und `docs/guidelines.md` ergänzt.
 - **Navigation & Startseite:**
+  - Neues (vermutlich vorübergehendes) Comic-Logo auf dem Startbildschirm (`HomeView.vue`): moderner Uhr-Charakter mit zwinkerndem Gesicht, rotierenden Zeigern, kreisenden „Shift"-Pfeilen und blinkendem Funken – professionell, modern und humorvoll. Berücksichtigt `prefers-reduced-motion`.
   - Menüpunkt für die Einstellungen auf der Startseite (`HomeView.vue`) hinzugefügt.
 - **Einstellungen:**
   - Dark Mode / Light Mode Umschalter in die Einstellungsseite (`SettingsView.vue`) integriert.

@@ -23,39 +23,57 @@
 
       <div id="container">
         <div class="logo-container">
-          <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" class="comic-logo">
-            <!-- Stylized Time Clock / Cyborg Head Mix -->
-            <!-- The "Helmet" / Case -->
-            <rect x="40" y="40" width="120" height="120" rx="15" fill="#4a4a4a" stroke="#1a1a1a" stroke-width="6" />
-            <path d="M40,110 L160,110 L160,145 C160,153 153,160 145,160 L55,160 C47,160 40,153 40,145 Z" fill="#666" />
-            
-            <!-- The Display / Visor -->
-            <rect x="55" y="60" width="90" height="40" rx="5" fill="#222" />
-            
-            <!-- Red Scanning Eye (Cylons/Terminator style) -->
-            <rect x="60" y="75" width="80" height="10" rx="5" fill="#400" />
-            <rect x="70" y="75" width="20" height="10" rx="5" fill="#ff0000">
-              <animate attributeName="x" values="60;120;60" dur="3s" repeatCount="indefinite" />
-              <animate attributeName="opacity" values="0.5;1;0.5" dur="1.5s" repeatCount="indefinite" />
-            </rect>
-            
-            <!-- Slot for Time Card -->
-            <rect x="70" y="25" width="60" height="20" fill="#ddd" stroke="#1a1a1a" stroke-width="4" />
-            <path d="M75,10 L125,10 L125,30 L75,30 Z" fill="#fff" stroke="#1a1a1a" stroke-width="2" />
-            <text x="82" y="22" font-family="monospace" font-size="10" fill="#333" font-weight="bold">SHIFT</text>
-            
-            <!-- Antennae / Ears -->
-            <line x1="40" y1="80" x2="25" y2="80" stroke="#1a1a1a" stroke-width="6" stroke-linecap="round" />
-            <circle cx="20" cy="80" r="5" fill="#ff0000" />
-            <line x1="160" y1="80" x2="175" y2="80" stroke="#1a1a1a" stroke-width="6" stroke-linecap="round" />
-            
-            <!-- Mouth / Grill -->
-            <line x1="75" y1="130" x2="125" y2="130" stroke="#1a1a1a" stroke-width="2" />
-            <line x1="75" y1="135" x2="125" y2="135" stroke="#1a1a1a" stroke-width="2" />
-            <line x1="75" y1="140" x2="125" y2="140" stroke="#1a1a1a" stroke-width="2" />
-            
-            <!-- Text/Punchline -->
-            <text x="100" y="185" font-family="Impact, sans-serif" font-size="16" fill="#1a1a1a" text-anchor="middle" letter-spacing="1">SHIFT HAPPENS</text>
+          <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" class="comic-logo" role="img" aria-label="ShiftHappens Logo">
+            <defs>
+              <!-- Moderner Farbverlauf für das Badge -->
+              <linearGradient id="badgeGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#5b8dff" />
+                <stop offset="55%" stop-color="#3880ff" />
+                <stop offset="100%" stop-color="#6a4bff" />
+              </linearGradient>
+              <linearGradient id="faceGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#ffffff" />
+                <stop offset="100%" stop-color="#eef3ff" />
+              </linearGradient>
+            </defs>
+
+            <!-- App-Badge mit weichem Verlauf -->
+            <rect x="18" y="18" width="164" height="164" rx="42"
+                  fill="url(#badgeGrad)" stroke="#1a1a1a" stroke-width="5" />
+
+            <!-- Kreisende Shift-Pfeile (der humorvolle "es verschiebt sich"-Twist) -->
+            <g class="orbit" stroke="#ffd34e" stroke-width="7" stroke-linecap="round" fill="none">
+              <path d="M100 34 A66 66 0 0 1 166 100" />
+              <path d="M166 100 L160 82 M166 100 L179 90" />
+              <path d="M100 166 A66 66 0 0 1 34 100" />
+              <path d="M34 100 L40 118 M34 100 L21 110" />
+            </g>
+
+            <!-- Uhr-/Charakter-Gesicht -->
+            <circle cx="100" cy="100" r="54" fill="url(#faceGrad)" stroke="#1a1a1a" stroke-width="5" />
+
+            <!-- Cartoon-Augen (eines zwinkert) -->
+            <circle cx="80" cy="88" r="8" fill="#1a1a1a" />
+            <circle cx="82" cy="85" r="2.6" fill="#ffffff" />
+            <circle class="eye-open" cx="120" cy="88" r="8" fill="#1a1a1a" />
+            <circle class="eye-open" cx="122" cy="85" r="2.6" fill="#ffffff" />
+            <path class="eye-wink" d="M112 88 h16" stroke="#1a1a1a" stroke-width="4" stroke-linecap="round" fill="none" />
+
+            <!-- Breites Grinsen -->
+            <path d="M78 112 q22 24 44 0" fill="none" stroke="#1a1a1a"
+                  stroke-width="5" stroke-linecap="round" />
+
+            <!-- Rotierende Uhrzeiger -->
+            <g class="hands" stroke="#3880ff" stroke-linecap="round" fill="none">
+              <line class="hand-min" x1="100" y1="100" x2="100" y2="66" stroke-width="4" />
+              <line class="hand-hour" x1="100" y1="100" x2="122" y2="100" stroke-width="5" />
+              <circle cx="100" cy="100" r="5" fill="#3880ff" stroke="none" />
+            </g>
+
+            <!-- Blinzelnder Funke für den Witz -->
+            <g class="sparkle" fill="#fff3b0">
+              <path d="M154 44 l4 10 10 4 -10 4 -4 10 -4 -10 -10 -4 10 -4 z" />
+            </g>
           </svg>
         </div>
         <strong>Willkommen bei ShiftHappens</strong>
@@ -113,7 +131,75 @@ import { isDarkMode, toggleDarkMode } from '../services/themeService';
 .comic-logo {
   width: 150px;
   height: 150px;
-  filter: drop-shadow(4px 4px 0px rgba(0,0,0,0.1));
+  filter: drop-shadow(4px 6px 6px rgba(0, 0, 0, 0.2));
+  animation: logo-bob 3.5s ease-in-out infinite;
+  transform-origin: center;
+}
+
+/* Sanftes Wippen des gesamten Logos */
+@keyframes logo-bob {
+  0%, 100% { transform: translateY(0) rotate(-1.5deg); }
+  50% { transform: translateY(-6px) rotate(1.5deg); }
+}
+
+/* Kreisende Shift-Pfeile */
+.comic-logo .orbit {
+  transform-origin: 100px 100px;
+  animation: orbit-spin 6s linear infinite;
+}
+@keyframes orbit-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Uhrzeiger rotieren unterschiedlich schnell */
+.comic-logo .hand-min {
+  transform-origin: 100px 100px;
+  animation: hand-spin 4s linear infinite;
+}
+.comic-logo .hand-hour {
+  transform-origin: 100px 100px;
+  animation: hand-spin 24s linear infinite;
+}
+@keyframes hand-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Zwinkern: Auge schließt sich kurz */
+.comic-logo .eye-open { animation: eye-open-blink 4s ease-in-out infinite; }
+.comic-logo .eye-wink { opacity: 0; animation: eye-wink-blink 4s ease-in-out infinite; }
+@keyframes eye-open-blink {
+  0%, 82%, 100% { opacity: 1; }
+  86%, 92% { opacity: 0; }
+}
+@keyframes eye-wink-blink {
+  0%, 82%, 100% { opacity: 0; }
+  86%, 92% { opacity: 1; }
+}
+
+/* Funke blinkt und pulsiert */
+.comic-logo .sparkle {
+  transform-origin: 158px 58px;
+  animation: sparkle-twinkle 2.5s ease-in-out infinite;
+}
+@keyframes sparkle-twinkle {
+  0%, 100% { opacity: 0.3; transform: scale(0.7) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.1) rotate(90deg); }
+}
+
+/* Rücksicht auf Nutzer, die Bewegung reduzieren möchten */
+@media (prefers-reduced-motion: reduce) {
+  .comic-logo,
+  .comic-logo .orbit,
+  .comic-logo .hand-min,
+  .comic-logo .hand-hour,
+  .comic-logo .eye-open,
+  .comic-logo .eye-wink,
+  .comic-logo .sparkle {
+    animation: none;
+  }
+  .comic-logo .eye-wink { opacity: 0; }
 }
 
 #container strong {
