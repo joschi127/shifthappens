@@ -2,6 +2,8 @@
 
 Eine mobile Progressive Web App (PWA) zur Verwaltung von persönlichen Dienst- und Schichtplänen.
 
+🔗 **Live-App:** [https://joschi127.github.io/shifthappens/](https://joschi127.github.io/shifthappens/)
+
 ## Tech-Stack
 - **Framework:** [Vue.js 3](https://vuejs.org/)
 - **UI-Bibliothek:** [Ionic Framework (Vue)](https://ionicframework.com/docs/vue/overview)
