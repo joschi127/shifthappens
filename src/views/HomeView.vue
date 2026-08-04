@@ -89,6 +89,15 @@
           <ion-button expand="block" fill="outline" router-link="/settings">
             Einstellungen
           </ion-button>
+          <ion-button
+            v-if="canInstall"
+            expand="block"
+            fill="outline"
+            @click="handleInstall"
+          >
+            <ion-icon slot="start" :icon="downloadOutline"></ion-icon>
+            {{ installButtonLabel }}
+          </ion-button>
         </div>
         
       </div>
@@ -107,8 +116,35 @@ import {
   IonButtons,
   IonIcon
 } from '@ionic/vue';
-import { moon, sunny, settingsOutline } from 'ionicons/icons';
+import { alertController } from '@ionic/vue';
+import { moon, sunny, settingsOutline, downloadOutline } from 'ionicons/icons';
+import { computed } from 'vue';
 import { isDarkMode, toggleDarkMode } from '../services/themeService';
+import { canInstall, isIos, promptInstall } from '../services/pwaInstallService';
+
+// Best-Practice-Beschriftung: iOS spricht von "Zum Home-Bildschirm",
+// Android/Chromium von "App installieren".
+const installButtonLabel = computed(() =>
+  isIos() ? 'Zum Home-Bildschirm hinzuf\u00fcgen' : 'App installieren'
+);
+
+const showIosInstallHelp = async () => {
+  const alert = await alertController.create({
+    header: 'Zum Home-Bildschirm hinzuf\u00fcgen',
+    message:
+      'Tippe unten in der Safari-Leiste auf das Teilen-Symbol und w\u00e4hle anschlie\u00dfend "Zum Home-Bildschirm".',
+    buttons: ['Verstanden']
+  });
+  await alert.present();
+};
+
+const handleInstall = async () => {
+  if (isIos()) {
+    await showIosInstallHelp();
+    return;
+  }
+  await promptInstall();
+};
 
 </script>
 

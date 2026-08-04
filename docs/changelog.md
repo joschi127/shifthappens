@@ -3,6 +3,10 @@
 Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
 ## [Unreleased]
+- **PWA-Installation ("Zum Startbildschirm hinzufügen"):**
+  - Neuer Installations-Button auf der Startseite (`HomeView.vue`), der nur erscheint, wenn die App im Browser (nicht bereits als PWA) läuft. Der Button verwendet den `outline`-Stil (ohne gefüllte Hintergrundfarbe), damit die Beschriftung gut lesbar bleibt; das Download-Icon hebt ihn zusätzlich hervor.
+  - Neuer Service `pwaInstallService.ts`, der das `beforeinstallprompt`-Event (Android/Chromium) abfängt und den Standalone-/Installationsstatus reaktiv bereitstellt.
+  - Plattformgerechte Best-Practice-Beschriftung: "App installieren" (Android/Desktop) bzw. "Zum Home-Bildschirm hinzufügen" (iOS) mit Anleitung über das Safari-Teilen-Menü, da iOS keinen automatischen Installationsdialog unterstützt.
 - **Konfiguration & Dokumentation:**
   - Klargestellt, dass `.env` (ohne Secrets) ins Git eingecheckt wird und geheime Werte/Client-IDs in `.env.local` gehören – in `README.md` korrigiert und in `docs/guidelines.md` ergänzt.
   - GitHub-Pages-Deployment: `VITE_GOOGLE_CLIENT_ID` wird jetzt im Actions-Build aus einer Repository-Variable (`vars.VITE_GOOGLE_CLIENT_ID`) gesetzt; Anleitung in `README.md` und `docs/guidelines.md` ergänzt.
