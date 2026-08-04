@@ -3,6 +3,8 @@ import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  // Base-Pfad für GitHub Pages Project Site (https://<user>.github.io/shifthappens/)
+  base: '/shifthappens/',
   server: {
     host: true
   },

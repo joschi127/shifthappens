@@ -4,26 +4,41 @@ on:
   push:
     branches: [ main ]
 
+  # Ermöglicht das manuelle Auslösen über den "Actions"-Tab
+  workflow_dispatch:
+
+# Rechte, die der GITHUB_TOKEN für das Deployment benötigt
+permissions:
+  contents: write
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
       - name: Build project
         run: npm run build
+        env:
+          # Wird beim Build in die App eingebacken (Vite). Als Repository-Variable
+          # unter Settings → Secrets and variables → Actions → Variables anlegen.
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
+
+      - name: SPA-Fallback (404.html) erstellen
+        run: cp dist/index.html dist/404.html
 
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
