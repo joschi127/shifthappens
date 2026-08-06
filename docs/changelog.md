@@ -4,6 +4,7 @@ Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentier
 
 ## [Unreleased]
 - **Deployment (GitHub Pages / CI):**
+  - Chore: Changelog-Eintrag hinzugefügt, um nach der Umstellung der Pages-Source auf *GitHub Actions* einen Push auf `main` und damit einen ersten Deployment-Lauf über den neuen offiziellen Workflow auszulösen.
   - Bugfix: Das GitHub-Pages-Deployment schlug im automatischen Workflow „pages build and deployment" mit `Invalid actions OIDC token due to No keys from key endpoint match the id token` fehl. Ursache war das branch-basierte Deployment über `peaceiris/actions-gh-pages` (Push auf `gh-pages`), das den fehleranfälligen Legacy-Pages-Build auslöste. Der Workflow (`.github/workflows/deploy.yml`) nutzt nun das **offizielle GitHub-Pages-Deployment** (`actions/configure-pages` + `actions/upload-pages-artifact` + `actions/deploy-pages`) mit den Berechtigungen `pages: write` und `id-token: write` (OIDC) sowie einer `concurrency`-Gruppe. Ein `gh-pages`-Branch wird nicht mehr benötigt; die Pages-Source muss auf *GitHub Actions* umgestellt werden.
   - Behebung der Deprecation-Warnung „Node.js 20 is deprecated": Veraltete Actions (`actions/checkout@v4`, `actions/upload-artifact@v4`) wurden durch aktuelle Versionen ersetzt (`actions/checkout@v5` bzw. das artefaktbasierte `actions/upload-pages-artifact@v3`).
 - **Kalender:**
