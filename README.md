@@ -30,14 +30,15 @@ Eine mobile Progressive Web App (PWA) zur Verwaltung von persönlichen Dienst- u
 
 Das Deployment erfolgt automatisch per GitHub Actions (`.github/workflows/deploy.yml`) bei jedem Push auf den `main`-Branch. Die App wird anschließend unter `https://joschi127.github.io/shifthappens/` bereitgestellt.
 
+Der Workflow nutzt das **offizielle GitHub-Pages-Deployment** (`actions/upload-pages-artifact` + `actions/deploy-pages` mit OIDC-Token). Es wird **kein** `gh-pages`-Branch mehr benötigt.
+
 ### Einmalige manuelle Aktivierung
 1. Projekt zu GitHub pushen (z. B. `git push -u origin main`).
-2. Im GitHub-Repo unter **Settings → Actions → General** sicherstellen, dass **Workflow permissions** auf *Read and write permissions* steht (nötig, damit der Workflow den `gh-pages`-Branch schreiben darf).
-3. Push auslösen (oder unter **Actions** den Workflow *Deploy to GitHub Pages* manuell starten). Beim ersten erfolgreichen Lauf legt der Workflow automatisch den `gh-pages`-Branch an.
-4. Unter **Settings → Pages**:
-   - **Source:** *Deploy from a branch*
-   - **Branch:** `gh-pages` / `(root)` auswählen und speichern.
-5. Nach 1–2 Minuten ist die App unter `https://joschi127.github.io/shifthappens/` erreichbar.
+2. Unter **Settings → Pages** bei **Source** *GitHub Actions* auswählen.
+3. Push auslösen (oder unter **Actions** den Workflow *Deploy to GitHub Pages* manuell starten).
+4. Nach 1–2 Minuten ist die App unter `https://joschi127.github.io/shifthappens/` erreichbar.
+
+> Hinweis: Die für das Deployment nötigen Berechtigungen (`pages: write`, `id-token: write`) sind bereits im Workflow gesetzt. Ein separates Setzen der *Workflow permissions* auf *Read and write* ist damit nicht mehr erforderlich.
 
 > Hinweis: Der Base-Pfad ist in `vite.config.ts` auf `/shifthappens/` gesetzt. Wird das Repository umbenannt, muss dieser Wert entsprechend angepasst werden.
 
