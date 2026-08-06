@@ -3,6 +3,8 @@
 Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
 ## [Unreleased]
+- **Guidelines:**
+  - Neue Regel in `docs/guidelines.md` (Abschnitt „Git & Commits"): Commit-Nachrichten dürfen keine `Co-authored-by:`-Zeile enthalten.
 - **Startseite:**
   - Bugfix (iOS/Safari): Das Logo auf dem Startbildschirm (`HomeView.vue`) überlappte auf echten iPhones in Safari den Titel, da der Inhalt via `position: absolute` und `translateY(-50%)` vertikal zentriert wurde. Bei niedriger Viewport-Höhe wurde der (höhere) Inhalt über den sichtbaren Bereich hinausgeschoben. Die Zentrierung erfolgt nun im normalen Fluss per Flexbox (`min-height: 100%`) inkl. Safe-Area-Padding. Zusätzlich erhält das SVG-Logo explizite `width`/`height`-Attribute für eine zuverlässige Größenberechnung in Safari.
   - Beta-Hinweis-Box auf der Startseite (`HomeView.vue`) hinzugefügt, die darauf hinweist, dass es sich noch um eine Beta-Version handelt, es zu Fehlern kommen und Daten verloren gehen können.

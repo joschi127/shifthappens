@@ -10,6 +10,9 @@
 - **Changelog-Pflicht:** Jede signifikante Änderung oder jedes neue Feature muss im `docs/changelog.md` unter der Sektion `[Unreleased]` dokumentiert werden.
 - **Code-Stil:** Einheitliche Formatierung und klare Benennung von Variablen und Funktionen.
 
+## Git & Commits
+- **Keine Co-Autor-Zeile:** Commit-Nachrichten dürfen **keine** `Co-authored-by:`-Zeile enthalten (insbesondere kein `Co-authored-by: Some AI Agent`).
+
 ## Technische Vorgaben
 - Framework: Vue.js 3 (Composition API).
 - Styling: Ionic CSS Utilities und Scoped CSS in Vue-Komponenten.
