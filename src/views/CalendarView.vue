@@ -38,7 +38,8 @@
             :class="{ 
               'other-month': !isCurrentMonth, 
               'today': isToday,
-              'selected': date === selectedDate 
+              'selected': date === selectedDate,
+              'has-crossing-shift': dateHasCrossingShift(date)
             }"
             @click="selectDay(date)"
           >
@@ -286,6 +287,17 @@ const isShiftCrossingMidnight = (shift: Shift) => {
   return mainCrosses || splitCrosses || standbyCrosses;
 };
 
+/**
+ * Prüft, ob an einem Tag mindestens eine Schicht über Mitternacht geht.
+ * Solche Tage erhalten einen höheren z-index, damit der horizontale
+ * Nachtschicht-Überhang über der (später gerenderten) Folgezelle sichtbar
+ * bleibt – nötig, da `clip-path` auf `.calendar-day` einen eigenen
+ * Stacking-Context erzeugt.
+ */
+const dateHasCrossingShift = (date: string) => {
+  return getShiftsForDate(date).some(isShiftCrossingMidnight);
+};
+
 const getShiftColor = (shift: Shift) => {
   const type = shiftTypes.value?.find(t => t.id === shift.shiftTypeId);
   return type?.color || '#cccccc';
@@ -414,6 +426,24 @@ const deleteShift = async (id: number) => {
   background: var(--ion-background-color);
   position: relative;
   min-height: 50px;
+  /*
+   * Vertikalen Überlauf verstecken (z. B. bei mehreren Schichten pro Tag),
+   * aber horizontalen Überlauf erhalten, damit Nachtschicht-Indikatoren
+   * weiterhin in den Folgetag hineinragen können.
+   *
+   * `overflow: hidden` scheidet aus, weil es beide Achsen klippt. Ein reines
+   * `overflow-y: hidden` würde laut CSS-Spezifikation die andere Achse auf
+   * `auto` zwingen und damit den horizontalen Überhang abschneiden.
+   *
+   * Die Kombination `overflow-x: visible` + `overflow-y: clip` ist dagegen
+   * zulässig: `visible` und `clip` sind beide "non-scrollable values", daher
+   * wird keine der beiden Achsen umgerechnet. So wird nur vertikal geklippt,
+   * während der horizontale Nachtschicht-Überhang sichtbar bleibt. Anders als
+   * `clip-path` erzeugt `overflow: clip` KEINEN eigenen Stacking-Context, sodass
+   * der Überhang korrekt über der Nachbarzelle liegt (siehe `has-crossing-shift`).
+   */
+  overflow-x: visible;
+  overflow-y: clip;
 }
 
 .calendar-day.other-month {
@@ -429,6 +459,16 @@ const deleteShift = async (id: number) => {
   outline: 2px solid var(--ion-color-primary);
   outline-offset: -2px;
   z-index: 10;
+}
+
+/*
+ * Tage mit einer über Mitternacht gehenden Schicht müssen über der rechten
+ * Nachbarzelle liegen. `clip-path` (oben) bildet pro Zelle einen eigenen
+ * Stacking-Context; ohne erhöhten z-index würde die später im DOM gerenderte
+ * Folgezelle den horizontalen Überhang des Nachtschicht-Indikators verdecken.
+ */
+.calendar-day.has-crossing-shift {
+  z-index: 6;
 }
 
 .calendar-day.today .day-number {

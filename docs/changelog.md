@@ -3,6 +3,10 @@
 Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
 ## [Unreleased]
+- **Kalender:**
+  - Bugfix: Bei mehreren Schichten an einem Tag wuchs die Kalenderzelle vertikal und der Inhalt lief über (`CalendarView.vue`). Der vertikale Überlauf wird nun ausgeblendet, während der horizontale Überlauf der Nachtschicht-Indikatoren (Überhang in den Folgetag) erhalten bleibt. Umgesetzt über `clip-path: inset(0 -100px 0 0)` auf `.calendar-day`, da ein einfaches `overflow-y: hidden` gemäß CSS-Spezifikation die andere Achse auf `auto` (clipping) zwingen und damit den horizontalen Überhang abschneiden würde.
+  - Bugfix (Folgekorrektur): Der horizontale Nachtschicht-Überhang war nach der obigen Änderung nicht mehr sichtbar. Ursache: `clip-path` erzeugt pro Zelle einen eigenen Stacking-Context, wodurch der `z-index: 5` des Indikators innerhalb der Zelle „gefangen" war und die später gerenderte Folgezelle den Überhang verdeckte. Tage mit einer über Mitternacht gehenden Schicht erhalten nun die Klasse `has-crossing-shift` mit `z-index: 6`, sodass der Überhang wieder über der Nachbarzelle liegt.
+  - Bugfix (finale Korrektur): Da der Überhang mit `clip-path` weiterhin nicht zuverlässig sichtbar wurde, wurde `clip-path` auf `.calendar-day` durch die Kombination `overflow-x: visible` + `overflow-y: clip` ersetzt. Diese Kombination ist laut CSS-Spezifikation zulässig (beide sind „non-scrollable values", daher wird keine Achse auf `auto`/`hidden` umgerechnet): Der vertikale Überlauf wird geklippt, der horizontale Nachtschicht-Überhang bleibt erhalten. Anders als `clip-path` erzeugt `overflow: clip` keinen eigenen Stacking-Context, wodurch der Überhang (zusammen mit `has-crossing-shift`, `z-index: 6`) korrekt über der Nachbarzelle liegt.
 - **Guidelines:**
   - Neue Regel in `docs/guidelines.md` (Abschnitt „Git & Commits"): Commit-Nachrichten dürfen keine `Co-authored-by:`-Zeile enthalten.
 - **Startseite:**
