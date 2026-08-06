@@ -23,7 +23,7 @@
 
       <div id="container">
         <div class="logo-container">
-          <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" class="comic-logo" role="img" aria-label="ShiftHappens Logo">
+          <svg width="150" height="150" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" class="comic-logo" role="img" aria-label="ShiftHappens Logo">
             <defs>
               <!-- Moderner Farbverlauf für das Badge -->
               <linearGradient id="badgeGrad" x1="0" y1="0" x2="1" y2="1">
@@ -161,11 +161,26 @@ const handleInstall = async () => {
 <style scoped>
 #container {
   text-align: center;
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+  /*
+   * Inhalt im normalen Fluss zentrieren statt via position:absolute + translateY(-50%).
+   * Die absolute Zentrierung brach auf echten iPhones (Safari): Bei niedriger
+   * Viewport-Hoehe wurde der (hoehere) Inhalt nach oben ueber den sichtbaren
+   * Bereich geschoben, wodurch das Logo den Titel ueberlappte. Flexbox mit
+   * min-height und Safe-Area-Padding funktioniert plattformuebergreifend.
+   */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100%;
+  box-sizing: border-box;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 16px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+}
+
+/* Direkte Kinder sollen die volle Breite behalten (z. B. Buttons mit expand="block"). */
+#container > * {
+  width: 100%;
 }
 
 .beta-notice {
