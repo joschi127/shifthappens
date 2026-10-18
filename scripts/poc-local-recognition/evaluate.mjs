@@ -11,7 +11,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../..');
 const outRoot = process.argv[2] || fs.mkdtempSync('/tmp/roster-evaluation-');
 const BEST = { TEMPLATES: '1', T_MIN: '0.85', T_MARGIN: '0.10', SNAP: '1', MODE: 'gray', SCALE: '2', INSET_L: '0.06', INSET_R: '0.02', INSET_Y: '0.1',
-  LINEFIX: '1', ROWOCR: '1', ROWPSM: 'sparse', GAP: '60', IGNORE: '////,D03', PLANINK: '1' };
+  LINEFIX: '1', ROWOCR: '1', ROWPSM: 'sparse', GAP: '60', IGNORE: '////,D03', PLANINK: '1', SNAP_LOCAL: '1', ROWBG: 'check' };
 
 const isFree = (v) => ['', '-', '–', '—'].includes(v);
 const isCorrect = (c) => c.result === c.expected || (isFree(c.result) && isFree(c.expected));

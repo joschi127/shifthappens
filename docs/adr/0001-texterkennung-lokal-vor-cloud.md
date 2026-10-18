@@ -1,6 +1,6 @@
 # 0001: Texterkennung beim Dienstplan-Import zuerst lokal, Cloud nur als Rückfall
 
-- **Status:** Angenommen. Drei Nachträge vom 18.10.2026 mit Ergebnissen der Simulation (unten).
+- **Status:** Angenommen. Vier Nachträge vom 18.10.2026 mit Ergebnissen der Simulation (unten).
 - **Datum:** 18.10.2026
 - **Feature:** [Dienstplan-Import](../prd/dienstplan-import.md)
 
@@ -157,6 +157,27 @@ Die Ecken weichen um 1–3 px von sorgfältig manuell gesetzten ab. Gefunden wur
 - Über alle 9 Bilder und 3.486 bewertete Zellen gibt es **keine sicher falsche Zelle**.
 - **Handschriftliche Korrekturen** werden auch ohne eigene Erkennung von Durchstreichungen als unsicher markiert, weil der Strich die Lesung stört. Eine gezielte Erkennung (PRD Schritt 8) bleibt sinnvoll, um den Grund „Handschrift“ angeben zu können.
 - **S-Zeile des echten Plans:** 18 % unsicher, vorsichtiger als nötig. Das ist der Preis der planbezogenen Leer-Erkennung und kann in der Umsetzung nachgeschärft werden.
+
+## Nachtrag 4 (18.10.2026): Variante 5 als öffentlicher Ersatz für den echten Plan
+
+**Anlass:** Der echte Plan darf nicht ins öffentliche Repo, er bleibt in `local/`. Damit der automatische Regressionstest die Fehlerarten des echten Fotos trotzdem abdeckt, bildet die synthetische **Variante 5** dessen Eigenheiten nach (siehe `docs/beispiele/dienstplaene/README.md`).
+
+**Gefundene Lücken und Gegenmaßnahmen:**
+- **Gewölbtes Papier:** Zeilen bogen sich um mehr als eine halbe Unterzeile, und eine gemeinsame Zeilengrenze für die ganze Tabelle reichte nicht (16 sicher falsche Zellen). Lösung: Die Zeilengrenzen werden **pro Spalte** eingerastet und von Spalte zu Spalte nachgeführt. Das verbessert auch den echten Plan (D-Zeile 186 statt 181 sicher richtig, S-Zeile 190 statt 172).
+- **Teilfüllung** (Farbfläche nur oben, dunkle Schrift): Das Invertieren ganzer Zellen machte aus `M01` „F4“, eingerastet auf `F04` (9 sicher falsche Zellen). Lösung: Zellen mit Teilfüllung werden an einer **Änderung der Farbsättigung** zwischen oberen und unteren Pixelzeilen erkannt und zusätzlich mit zeilenweisem Hintergrund gelesen. Weichen beide Lesungen ab, wird die Zelle unsicher. Zeilenweiser Hintergrund für *alle* Zellen hat Fotos deutlich verschlechtert und wurde verworfen.
+- **Schmale Abwesenheitszeile:** Kontrastarme Zellen gelten nur noch dann als sicher leer, wenn sie keinem sicher gelesenen `U` ähneln.
+
+**Ergebnis** (alle Bilder, D-Zeile bzw. S-Zeile: sicher richtig / **sicher falsch** / unsicher):
+
+| Bild | D-Zeile | S-Zeile |
+|---|---|---|
+| Varianten 1 und 2 (sauber und Foto) | je 360/**0**/0 | – |
+| Variante 3 sauber / Foto | 199/**0**/0 · 197/**0**/2 | 210/**0**/0 · 207/**0**/3 |
+| Variante 4 sauber / Foto (Handschrift markiert) | 197/**0**/2 · 195/**0**/4 | 208/**0**/2 · 205/**0**/5 |
+| Variante 5 sauber / Foto | 190/**0**/9 · 186/**0**/13 | 210/**0**/0 · 210/**0**/0 |
+| Echter Plan (lokal) | 186/**0**/14 | 190/**0**/20 |
+
+**Nachweis als Wächter:** Das Verfahren aus Nachtrag 1 liefert auf dem Foto von Variante 5 **10 sicher falsche Zellen**, auf dem von Variante 3 keine. Variante 5 fängt also genau die Fehlerarten ab, die sonst nur das echte Foto gezeigt hätte.
 
 ## Quellen
 

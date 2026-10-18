@@ -39,7 +39,7 @@ BLOCK_RATIO=2.66 node scripts/poc-local-recognition/find-block.mjs <bild> <profi
 ## `recognize.mjs`: Zellen erkennen und mit erwarteten Werten vergleichen
 
 ```sh
-TEMPLATES=1 T_MIN=0.85 T_MARGIN=0.10 SNAP=1 MODE=gray SCALE=2 PLANINK=1 \
+TEMPLATES=1 T_MIN=0.85 T_MARGIN=0.10 SNAP=1 SNAP_LOCAL=1 ROWBG=check MODE=gray SCALE=2 PLANINK=1 \
 INSET_L=0.06 INSET_R=0.02 INSET_Y=0.1 LINEFIX=1 ROWOCR=1 ROWPSM=sparse GAP=60 \
 IGNORE='////,D03' EXPECTED=<erwartet.json> [PERSON=<index>] \
 node scripts/poc-local-recognition/recognize.mjs <bild> '<ecken>' <ausgabeordner> [rotate90]
@@ -58,6 +58,8 @@ Mit `PERSON` wird nur ein Personenblock ausgewertet, die Ecken sind dann die des
 | `TEMPLATES=1`, `T_MIN`, `T_MARGIN` | Muster pro Plan aus sicher gelesenen Zellen (inkl. „-“). Unsichere Zellen werden nur bei Ähnlichkeit ≥ `T_MIN` und Abstand ≥ `T_MARGIN` zum zweitbesten Muster entschieden (**0,85 / 0,10**). |
 | `PLANINK=1` | Leer oder beschriftet **pro Plan** entscheiden: Schwelle aus der Verteilung der Zellkontraste (Otsu). Sicher leer nur klar unterhalb, im Zwischenbereich unsicher. „-“ nur sicher, wenn die Zelle nicht deutlich mehr Tinte hat als typische Strich-Zellen. (**an**) |
 | (immer aktiv) | Widersprechen sich Streifen- und Einzelzellen-Lesung (z. B. Streifen ordnet Text der Nachbarzelle zu), wird die Zelle unsicher. |
+| `SNAP_LOCAL=1` | Zeilengrenzen **pro Spalte** einrasten und von Spalte zu Spalte nachführen (gewölbtes Papier) (**an**) |
+| `ROWBG` | Teilfüllung (Farbfläche nur in einem Teil der Zelle): `check` liest erkannte Teilfüllungen zusätzlich mit zeilenweisem Hintergrund und markiert die Zelle bei Abweichung als unsicher (**`check`**); `1`/`auto` verworfen (verschlechtern Fotos) |
 | `IGNORE` | Kürzel, die nicht bewertet werden, weil sie nicht zum Umfang gehören (`////`, `D03`) |
 
 ## Testdaten

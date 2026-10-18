@@ -7,7 +7,7 @@ const WEEKDAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 const FREE = '-';
 const isShift = (code: string) => code !== '' && code !== FREE && code !== '–';
 
-describe.each(['variante-1', 'variante-2', 'variante-3', 'variante-4'])('Referenz-Dienstplan %s', (variant) => {
+describe.each(['variante-1', 'variante-2', 'variante-3', 'variante-4', 'variante-5'])('Referenz-Dienstplan %s', (variant) => {
   const roster = loadReferenceRoster(variant);
 
   it('verweist auf vorhandene Bilddateien', () => {
@@ -113,6 +113,20 @@ describe('Variante 3 (Unterzeilen D/S/B/A/E)', () => {
         }
       }
     }
+  });
+});
+
+describe('Variante 5 (Eigenheiten eines echten Fotos)', () => {
+  it('unterscheidet sich von Variante 3 nur in den dokumentierten Änderungen', () => {
+    const v3 = loadReferenceRoster('variante-3');
+    const v5 = loadReferenceRoster('variante-5') as ReturnType<typeof loadReferenceRoster> & { aenderungen: { name: string; tag: number; zeile: 'D' | 'S' | 'B'; nachher: string }[] };
+    const field = { D: 'codes', S: 'sonder', B: 'bereitschaft' } as const;
+    const patched = JSON.parse(JSON.stringify(v3.zeilen));
+    for (const change of v5.aenderungen) {
+      const row = patched.find((r: { name: string }) => r.name === change.name);
+      row[field[change.zeile]][change.tag - 1] = change.nachher;
+    }
+    expect(v5.zeilen).toEqual(patched);
   });
 });
 

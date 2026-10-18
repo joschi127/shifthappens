@@ -31,6 +31,7 @@ Vier Dummy-Dienstpläne mit erwarteten Werten liegen in [`docs/beispiele/dienstp
 | 2 | wie 1, nur Kürzelspalte | soll funktionieren |
 | **3** | **realistisch:** 5 Unterzeilen pro Person (D/S/B/A/E), farbige dreistellige Kürzel, Foto um 90° gedreht mit Falz | **Hauptfall** |
 | 4 | wie 3, mit handschriftlichen Korrekturen und Notizen | Prüfhinweise |
+| 5 | wie 3, mit den Eigenheiten eines echten Fotos (ungleiche Unterzeilen, Schrift bis an die Linie, Teilfüllung, gewölbtes Papier) | Ersatz für den echten Plan im Regressionstest |
 
 ## Unterstützte Planformate (V1)
 
@@ -64,7 +65,7 @@ Vier Dummy-Dienstpläne mit erwarteten Werten liegen in [`docs/beispiele/dienstp
      - Die Tagesspalten ergeben sich aus den erkannten Tageszahlen der Kopfzeile.
      - Die Blockgrenzen werden als Gitterlinien gesucht, mit dem Verhältnis Blockhöhe zu Spaltenbreite aus der Import-Vorlage.
    - **Viereck zur Kontrolle:** Der Vorschlag erscheint als Viereck mit vier ziehbaren Ecken und Lupe. Der Nutzer bestätigt oder korrigiert **seinen Personenblock** (alle Unterzeilen, erste bis letzte Tagesspalte). Schlägt die Suche fehl, setzt er die Ecken selbst.
-   - **Entzerrung** über eine Homographie. Danach rasten die Zellgrenzen auf die tatsächlichen Gitterlinien ein, denn Unterzeilen sind im echten Plan unterschiedlich hoch.
+   - **Entzerrung** über eine Homographie. Danach rasten die Zellgrenzen auf die tatsächlichen Gitterlinien ein, denn Unterzeilen sind im echten Plan unterschiedlich hoch. Die Zeilengrenzen werden **pro Spalte** nachgeführt, damit gewölbtes Papier ausgeglichen wird.
    - **Ankerpunkte:** Vier Ecken reichen auch bei Falz und gewölbtem Papier. Zusätzliche Ankerpunkte sind **optional/später**.
 4. **Import-Vorlage**
    - Beschreibt Lage, Anzahl der Unterzeilen und deren Rollen, das Verhältnis Blockhöhe zu Spaltenbreite (für die automatische Blocksuche) sowie die zuletzt gewählte Bereichslage.
@@ -75,6 +76,7 @@ Vier Dummy-Dienstpläne mit erwarteten Werten liegen in [`docs/beispiele/dienstp
    - **Zeichenliste:** alle Zeichen der hinterlegten Schichtkürzel und `-`.
    - **Leere Zellen** werden **pro Plan** erkannt (Schwelle aus der Verteilung der Zellkontraste). Sicher leer nur klar unterhalb, sonst unsicher.
    - **Widerspruch Streifen ↔ Einzelzelle** (z. B. Text der Nachbarzelle zugeordnet) macht die Zelle unsicher.
+   - **Teilfüllung** (Farbfläche nur in einem Teil der Zelle): Erkannt an der Änderung der Farbsättigung. Die Zelle wird zusätzlich mit zeilenweisem Hintergrund gelesen und bei abweichender Lesung unsicher.
    - **Einrasten:** Typische Lesefehler werden bereinigt (O↔0, I/l↔1, S↔B/5 am Anfang). Fehlende Nullen werden ergänzt, wenn **genau ein** bekanntes Kürzel passt („F1“ → `F01`).
    - **Muster pro Plan:** Aus sicher gelesenen Zellen desselben Fotos entstehen Muster je Kürzel, auch für „-“. Unsichere Zellen werden nur bei hoher Ähnlichkeit (≥ 0,85) **und** klarem Abstand zum zweitbesten Muster (≥ 0,10) entschieden, sonst bleiben sie unsicher und bekommen einen Vorschlag. Die Muster sollen aus der **ganzen Tabelle** gelernt werden, nicht nur aus dem eigenen Block, weil das mehr Beispiele liefert. Das passiert nur lokal, importiert wird nur die eigene Zeile.
    - **Eine gültige eigene Lesung wird nie überstimmt.**
@@ -122,12 +124,12 @@ Vier Dummy-Dienstpläne mit erwarteten Werten liegen in [`docs/beispiele/dienstp
 
 ## Ergebnis der Simulation (18.10.2026)
 
-Simulation mit `tesseract.js` 7 in Node, Skripte und beste Einstellung in [`scripts/poc-local-recognition/`](../../scripts/poc-local-recognition/README.md). Gesamtauswertung aller Beispielbilder mit einem Befehl (`evaluate.mjs`), darunter ein **echtes Handyfoto** eines Dienstplans (nur lokal, nicht im Repo). Details: ADR 0001, Nachträge 1–3.
+Simulation mit `tesseract.js` 7 in Node, Skripte und beste Einstellung in [`scripts/poc-local-recognition/`](../../scripts/poc-local-recognition/README.md). Gesamtauswertung aller Beispielbilder mit einem Befehl (`evaluate.mjs`), darunter ein **echtes Handyfoto** eines Dienstplans (nur lokal, nicht im Repo). Details: ADR 0001, Nachträge 1–4.
 
 | Szenario | D-Zeile: sicher falsch / unsicher | S-Zeile: sicher falsch / unsicher |
 |---|---|---|
 | Echter Plan, eigener Block, **Ecken automatisch gefunden** | **0** / 0 von 30 | **0** / 0 von 30 |
-| Alle 9 Beispielbilder (Varianten 1–4 sauber und Foto, echter Plan), ganze Tabelle | **0** / 29 von 2.436 | **0** / 48 von 1.050 |
+| Alle 11 Beispielbilder (Varianten 1–5 sauber und Foto, echter Plan), ganze Tabelle | **0** / 44 von 2.834 | **0** / 30 von 1.470 |
 | Handschriftliche Korrekturen (Variante 4, echter Plan) | alle als unsicher markiert | |
 
 - **Erfolgskriterium erfüllt:** keine sicher falsche Zelle, höchstens 15 % unsicher.

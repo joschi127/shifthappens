@@ -17,6 +17,10 @@ Generierte Dummy-Dienstpläne **ohne echte Namen** in einem gängigen Format. Si
 | `variante-4-sauber.png` | **Variante 4:** Variante 3 mit **zwei handschriftlichen Korrekturen** (2938 × 1586 px) |
 | `variante-4-foto.jpg` | Variante 4 abfotografiert, zusätzlich mit handschriftlichen Notizen im Kopf (1125 × 1869 px) |
 | `variante-4.erwartet.json` | Verweist für die gedruckten Werte auf Variante 3 (`basis`) und listet die handschriftlichen Einträge je Bild |
+| `variante-5-sauber.png` | **Variante 5:** Variante 3 mit den Eigenheiten eines echten Plans: Unterzeilen unterschiedlich hoch, Schrift bis an die Gitterlinie, Teilfüllung (`M01`), leere Zelle, `RB`/`RB2` |
+| `variante-5-foto.jpg` | Variante 5 als **synthetisches** Foto: gewölbtes Papier, Perspektive, Licht, Klebestreifen, zweites Blatt, Unschärfe, um 90° gedreht |
+| `variante-5.erwartet.json` | Erwartete Werte für Variante 5 (vollständig) und die Änderungen gegenüber Variante 3 (`aenderungen`) |
+| `erzeugung/variante-5.py` | Skript, das Variante 5 aus Variante 3 erzeugt, inkl. erwarteter Werte und Ecken (Pillow, NumPy, fester Zufalls-Seed) |
 
 Geladen werden die erwarteten Werte in Tests über `loadReferenceRoster('variante-1')` aus `src/testing/referenceRosters.ts`.
 
@@ -80,13 +84,26 @@ Derselbe Plan wie Variante 3 mit handschriftlichen Änderungen. Die gedruckten W
 
 `variante-4.erwartet.json` hält nur fest, was auf den Bildern steht, und ordnet jeden Eintrag den Bildern zu, auf denen er vorkommt. Wie der Import Korrekturen behandelt, ist offen (siehe PRD).
 
+## Variante 5 (Eigenheiten eines echten Fotos)
+
+Erfundene Namen und Werte aus Variante 3, aber mit genau den Merkmalen, an denen die Erkennung beim echten Dienstplan-Foto (nur lokal, nicht im Repo) zunächst gescheitert ist. Sie dient als **öffentlicher Ersatz für den echten Plan** im automatischen Regressionstest.
+
+- **Unterzeilen unterschiedlich hoch:** Die Dienstzeile ist höher (38/32/32/33/35 statt 5 × 34 px).
+- **Schrift bis an die rechte Gitterlinie:** Der Inhalt der Dienstzeile ist links verankert in die Breite gezogen.
+- **Teilfüllung:** Die Farbfläche von `M01` füllt nur die oberen ~60 % der Zelle, die Schrift ist dunkel.
+- **Leere Zelle statt „-“** (Kessler, 17.) und **weitere Bereitschaftskürzel** `RB`, `RB2` (Kessler, 28./29.).
+- **Foto:** gewölbtes Papier, Perspektive, ungleichmäßiges Licht, Klebestreifen, zweites Blatt am unteren Rand, Unschärfe, um 90° gedreht.
+
+**Nachweis als Wächter:** Das Erkennungsverfahren vor der Optimierung (ADR 0001, Nachtrag 1) liefert auf dem Foto von Variante 5 **10 sicher falsche Zellen**, auf dem Foto von Variante 3 keine. Das aktuelle Verfahren besteht beide.
+
 ## Dateinamen
 
-`variante-<n>-sauber.png` (Original bzw. Druckvorlage), `variante-<n>-foto.jpg` (abfotografiert bzw. synthetisch), `variante-<n>.erwartet.json` (erwartete Werte), `erzeugung/variante-<n>.py` (Skript, falls die Variante abgeleitet ist).
+`variante-<n>-sauber.png` (Original bzw. Druckvorlage), `variante-<n>-foto.jpg` (abfotografiert bzw. synthetisch), `variante-<n>.erwartet.json` (erwartete Werte und Ecken je Bild unter `auswertung`), `erzeugung/variante-<n>.py` (Skript, falls die Variante abgeleitet ist).
 
 ## Neue Varianten hinzufügen
 
 1. Bild bzw. Bilder nach dem Schema oben ablegen. Nur generierte oder vollständig anonymisierte Pläne verwenden und Metadaten entfernen.
 2. `variante-<n>.erwartet.json` im selben Format anlegen. Unterscheidet sich eine Variante nur in der Abbildung eines bestehenden Plans, verweist sie über `basis` auf dessen Werte.
-3. Die Variante in `src/testing/referenceRosters.test.ts` in die Liste bei `describe.each` aufnehmen.
-4. KI-generierte Bilder sind möglich, aber Bildgeneratoren verändern in Tabellen gern einzelne Zeichen. Die erwarteten Werte daher immer am erzeugten Bild prüfen, nicht an der Vorlage.
+3. Die Ecken des Tagesrasters je Bild unter `auswertung` eintragen (bei gedrehten Fotos `"drehung": 90`), damit `scripts/poc-local-recognition/evaluate.mjs` das Bild mit auswertet.
+4. Die Variante in `src/testing/referenceRosters.test.ts` in die Liste bei `describe.each` aufnehmen.
+5. KI-generierte Bilder sind möglich, aber Bildgeneratoren verändern in Tabellen gern einzelne Zeichen. Die erwarteten Werte daher immer am erzeugten Bild prüfen, nicht an der Vorlage.

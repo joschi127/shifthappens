@@ -104,7 +104,7 @@ function cellToPngAbsdiff(img, x0, y0, w, h, scale) {
 }
 
 // ---------- Zelle vorverarbeiten ----------
-function cellToPng(img, x0, y0, w, h, scale) {
+function cellToPng(img, x0, y0, w, h, scale, forceRowBg = false) {
   if (process.env.MODE === 'absdiff') return cellToPngAbsdiff(img, x0, y0, w, h, scale);
   // Rand innen abschneiden (Gitterlinien), Graustufen, ggf. invertieren, Otsu, hochskalieren, weißer Rand
   // Ränder getrennt einstellbar: rechts reicht die Schrift im echten Plan bis an die Gitterlinie
@@ -116,6 +116,12 @@ function cellToPng(img, x0, y0, w, h, scale) {
   for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) {
     const s = ((y0 + iy + y) * img.width + (x0 + il + x)) * 4;
     gray[y * cw + x] = 0.299 * img.data[s] + 0.587 * img.data[s + 1] + 0.114 * img.data[s + 2];
+  }
+  // Farbsättigung je Pixel (für die Erkennung von Teilfüllungen)
+  const sat = new Float32Array(cw * ch);
+  for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) {
+    const s = ((y0 + iy + y) * img.width + (x0 + il + x)) * 4, r = img.data[s], g = img.data[s + 1], b = img.data[s + 2];
+    sat[y * cw + x] = Math.max(r, g, b) - Math.min(r, g, b);
   }
   // Senkrechte Gitterlinien an den Rändern entfernen: Spalte fast durchgehend deutlich dunkler als der Median
   if (process.env.LINEFIX === '1') {
@@ -138,6 +144,20 @@ function cellToPng(img, x0, y0, w, h, scale) {
   // Hintergrund = Mehrheit; ist er dunkel, invertieren
   let darkCount = 0; for (const g of gray) if (g < thr) darkCount++;
   const invert = darkCount > total / 2;
+  // Hintergrund je Pixelzeile und Skalierung der Abweichung (für ROWBG)
+  const rowMed = new Float32Array(ch);
+  for (let y = 0; y < ch; y++) { const r = Array.from(gray.subarray(y * cw, (y + 1) * cw)).sort((a, b) => a - b); rowMed[y] = r[r.length >> 1]; }
+  const diffs = []; for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) diffs.push(Math.abs(gray[y * cw + x] - rowMed[y]));
+  diffs.sort((a, b) => a - b);
+  const diffScale = Math.max(25, diffs[Math.floor(diffs.length * 0.97)] * 0.8);
+  // Teilfüllung: Hintergrund wechselt innerhalb der Zelle stark zwischen oberen und unteren Pixelzeilen
+  const sortedMed = Array.from(rowMed).sort((a, b) => a - b);
+  // zusätzlich muss sich die Farbsättigung ändern (kräftige Farbfläche oben, ungefärbt unten); Schatten sind grau
+  const rowSat = new Float32Array(ch);
+  for (let y = 0; y < ch; y++) { const r = Array.from(sat.subarray(y * cw, (y + 1) * cw)).sort((a, b) => a - b); rowSat[y] = r[r.length >> 1]; }
+  const sortedSat = Array.from(rowSat).sort((a, b) => a - b);
+  const partialFill = sortedMed[Math.floor(ch * 0.9)] - sortedMed[Math.floor(ch * 0.1)] > 60
+    && sortedSat[Math.floor(ch * 0.9)] - sortedSat[Math.floor(ch * 0.1)] > 50;
   // Mittelwerte der beiden Klassen für die Kontraststreckung
   let lo = 0, hi = 0, nlo = 0, nhi = 0; for (const g of gray) { if (g < thr) { lo += g; nlo++; } else { hi += g; nhi++; } }
   lo = nlo ? lo / nlo : 0; hi = nhi ? hi / nhi : 255;
@@ -153,14 +173,19 @@ function cellToPng(img, x0, y0, w, h, scale) {
     if (black) ink++;
     const d = ((y + pad) * OW + (x + pad)) * 4;
     let v;
-    if (process.env.MODE === 'gray') {
+    if (process.env.MODE === 'gray' && (forceRowBg || process.env.ROWBG === '1' || (process.env.ROWBG === 'auto' && partialFill))) {
+      // Hintergrund je Pixelzeile (Median): funktioniert auch bei Farbflächen, die nur einen Teil der Zelle füllen
+      const gyR = Math.min(ch - 1, Math.max(0, Math.round((y + 0.5) / S - 0.5)));
+      const diff = Math.abs(g - rowMed[gyR]);
+      v = (process.env.PLANINK === '1' ? false : contrast < 12) ? 255 : Math.round(255 * (1 - Math.min(1, diff / diffScale)));
+    } else if (process.env.MODE === 'gray') {
       // Kontrast strecken zwischen Schrift- und Hintergrundmittel, Tesseract binarisiert selbst
       let t = (g - lo) / Math.max(1, hi - lo); if (invert) t = 1 - t;
       v = (process.env.PLANINK === '1' ? false : contrast < 12) ? 255 : Math.round(255 * Math.min(1, Math.max(0, t)));
     } else v = black ? 0 : 255;
     out[d] = out[d + 1] = out[d + 2] = v;
   }
-  return { img: { width: OW, height: OH, data: out }, inkRatio: ink / (cw * ch * S * S), invert, std };
+  return { img: { width: OW, height: OH, data: out }, inkRatio: ink / (cw * ch * S * S), invert, std, partialFill };
 }
 
 // ---------- Ablauf ----------
@@ -196,7 +221,36 @@ function snapBounds(profile, count, size) {
 const SNAP = process.env.SNAP === '1';
 const colB = SNAP ? snapBounds(lineProfile(grid, true), COLS, CW) : [...Array(COLS + 1)].map((_, i) => i * CW);
 const rowB = SNAP ? snapBounds(lineProfile(grid, false), ROWS, RH) : [...Array(ROWS + 1)].map((_, i) => i * RH);
-const cellRect = (d, r) => [colB[d], rowB[r], colB[d + 1] - colB[d], rowB[r + 1] - rowB[r]];
+// Zeilengrenzen pro Spalte (gewölbtes Papier): Profil nur im Bereich der Spalte (+/- eine Nachbarspalte),
+// Startwert ist die Grenze der vorherigen Spalte, damit die Suche einer Biegung folgt
+function rowProfileAt(img, xa, xb) {
+  const n = img.height, dark = new Float32Array(n);
+  for (let y = 0; y < n; y++) { let sum = 0, c = 0; for (let x = Math.max(0, xa); x < Math.min(img.width, xb); x += 2) {
+    const i = (y * img.width + x) * 4; sum += 255 - (0.299 * img.data[i] + 0.587 * img.data[i + 1] + 0.114 * img.data[i + 2]); c++; } dark[y] = sum / c; }
+  return dark.map((v, i) => { let s2 = 0, c = 0; for (let k = -6; k <= 6; k++) if (Math.abs(k) > 2 && dark[i + k] !== undefined) { s2 += dark[i + k]; c++; } return v - s2 / c; });
+}
+let rowBByCol = null;
+if (SNAP && process.env.SNAP_LOCAL === '1') {
+  rowBByCol = [];
+  let prev = rowB;
+  // von der Mitte der Tabelle nach außen wäre auch möglich; hier von links nach rechts
+  for (let d = 0; d < COLS; d++) {
+    const prof = rowProfileAt(grid, colB[Math.max(0, d - 1)], colB[Math.min(COLS, d + 2)]);
+    const r = Math.round(RH * Number(process.env.SNAP_LOCAL_RANGE || 0.3));
+    const b = prev.map((e, i) => {
+      if (i === 0 || i === ROWS) {} // Außenkanten werden ebenfalls nachgeführt
+      let best = e, bv = -Infinity;
+      for (let y = Math.max(0, e - r); y <= Math.min(prof.length - 1, e + r); y++) if (prof[y] > bv) { bv = prof[y]; best = y; }
+      return best;
+    });
+    // Reihenfolge absichern (Grenzen dürfen sich nicht überholen)
+    for (let i = 1; i < b.length; i++) if (b[i] <= b[i - 1] + 4) b[i] = b[i - 1] + 4;
+    rowBByCol.push(b); prev = b;
+  }
+}
+const cellRect = (d, r) => rowBByCol
+  ? [colB[d], rowBByCol[d][r], colB[d + 1] - colB[d], rowBByCol[d][r + 1] - rowBByCol[d][r]]
+  : [colB[d], rowB[r], colB[d + 1] - colB[d], rowB[r + 1] - rowB[r]];
 
 const ALLOWED = new Set(['F01', 'F02', 'F04', 'M01', 'M05', 'S04', 'N01', 'N06', 'N08', 'D03', '////', '-', 'U', 'B11']);
 const normalize = (t) => {
@@ -294,7 +348,7 @@ for (let p = 0; p < ROSTER.zeilen.length; p++) {
   const person = ROSTER.zeilen[p];
   for (let d = 0; d < COLS; d++) {
     for (let [k, rowIdx, expected] of (SUB >= 3 ? [['D', 0, person.codes[d]], ['S', 1, person.sonder[d]], ['B', 2, person.bereitschaft[d]]] : [['D', 0, person.codes[d]]])) {
-      const { img: cell, inkRatio, std } = cellToPng(grid, ...cellRect(d, p * SUB + rowIdx), SCALE);
+      const { img: cell, inkRatio, std, partialFill } = cellToPng(grid, ...cellRect(d, p * SUB + rowIdx), SCALE);
       let got = '', rawText = '';
       if (process.env.PLANINK === '1' || inkRatio > 0.004) {
         const p2 = new PNG({ width: cell.width, height: cell.height }); p2.data = Buffer.from(cell.data);
@@ -302,7 +356,12 @@ for (let p = 0; p < ROSTER.zeilen.length; p++) {
         rawText = data.text.replace(/\s+/g, '').toUpperCase();
         got = normalize(data.text);
       }
-      const cellGot = got; let stripGot = '';
+      const cellGot = got; let stripGot = '', altGot = null;
+      if (k === 'D' && partialFill && process.env.ROWBG === 'check') {
+        const alt = cellToPng(grid, ...cellRect(d, p * SUB + rowIdx), SCALE, true).img;
+        const pa = new PNG({ width: alt.width, height: alt.height }); pa.data = Buffer.from(alt.data);
+        altGot = normalize((await worker.recognize(PNG.sync.write(pa))).data.text);
+      }
       if (k === 'D' && rowTexts[p]) {
         // Streifen-Ergebnis bevorzugen; nur wenn es nichts liefert, die Einzelzelle nehmen
         const rt = normalize(rowTexts[p].texts[d]);
@@ -312,7 +371,7 @@ for (let p = 0; p < ROSTER.zeilen.length; p++) {
       }
       if (k === 'B') { got = /[A-Z0-9]{2,}/.test(rawText) ? 'x' : ''; expected = expected ? 'x' : ''; } // B-Zeile: nur beschriftet ja/nein
       if (k === 'S') scells.push({ p, d, got: got === 'U' ? 'U' : got, expected, inkRatio, std, patch: patchOf(grid, ...cellRect(d, p * SUB + 1)) });
-      if (k === 'D') dcells.push({ p, d, got, cellGot, stripGot, expected, inkRatio, std, feat: feature(grid, ...cellRect(d, p * SUB)), patch: patchOf(grid, ...cellRect(d, p * SUB)) });
+      if (k === 'D') dcells.push({ p, d, got, cellGot, stripGot, altGot, expected, inkRatio, std, feat: feature(grid, ...cellRect(d, p * SUB)), patch: patchOf(grid, ...cellRect(d, p * SUB)) });
       const r = results[k]; r.n++;
       const free = (v) => v === '' || v === '-' || v === '–' || v === '—';
       if (got === expected || (free(got) && free(expected))) r.ok++; else {
@@ -358,7 +417,9 @@ for (const c of dcells) {
   // "-" nur sicher, wenn die Zelle nicht deutlich mehr Tinte hat als typische Strich-Zellen
   // Widerspruch Streifen <-> Einzelzelle (z. B. Streifen ordnet Text der Nachbarzelle zu) -> unsicher
   const cellSnap = snap(c.cellGot);
-  const conflict = c.stripGot && cellSnap !== snap(c.stripGot) && (cellSnap === '-' || KNOWN.includes(cellSnap) || (cellSnap === '' && PLANINK && c.std <= stdThr));
+  const conflict = (c.stripGot && cellSnap !== snap(c.stripGot) && (cellSnap === '-' || KNOWN.includes(cellSnap) || (cellSnap === '' && PLANINK && c.std <= stdThr)))
+    // Teilfüllung: Lesung mit zeilenweisem Hintergrund muss übereinstimmen
+    || (c.altGot !== null && snap(c.altGot) !== c.snapped);
   if (!conflict) {
     if (KNOWN.includes(c.snapped)) { c.voted = c.snapped; continue; }
     if ((c.snapped === '-' && (!PLANINK || c.std <= dashStd * 1.6)) || (c.snapped === '' && surelyEmpty(c))) { c.voted = '-'; continue; }
@@ -408,13 +469,21 @@ if (SUB >= 3) {
   for (const c of scells) {
     c.unsure = false;
     if (KNOWN_S.includes(c.got)) { c.voted = c.got; continue; }
-    if (c.got === '' && (process.env.PLANINK === '1' ? c.std <= sThr * 0.6 : c.inkRatio <= 0.02)) { c.voted = ''; continue; }
+    if (c.got === '' && (process.env.PLANINK === '1' ? c.std <= sThr * 0.6 : c.inkRatio <= 0.02)) { c.voted = ''; c.lowInk = true; continue; }
     c.unsure = true; c.voted = '';
   }
   // Muster: sicher gelesene Abwesenheiten und sicher leere Zellen
   const ex = new Map();
   for (const c of scells) if (!c.unsure) { const l = ex.get(c.voted) || []; if (l.length < 8) l.push(c.patch); ex.set(c.voted, l); }
   const MIN = Number(process.env.T_MIN || 0.75), MARGIN = Number(process.env.T_MARGIN || 0.08);
+  // "sicher leer" nur, wenn die Zelle auch keinem sicher gelesenen Abwesenheitskürzel ähnelt (schmale Zeilen, Linienreste)
+  for (const c of scells) {
+    if (!c.lowInk) continue;
+    for (const [code, pats] of ex.entries()) {
+      if (!code) continue;
+      if (Math.max(...pats.map(pt => bestNcc(c.patch, pt))) >= 0.6) { c.unsure = true; break; }
+    }
+  }
   for (const c of scells) {
     if (!c.unsure) continue;
     const sc = [...ex.entries()].map(([code, pats]) => ({ code, score: Math.max(...pats.map(pt => bestNcc(c.patch, pt))) })).sort((a, b) => b.score - a.score);
@@ -430,5 +499,5 @@ if (SUB >= 3) {
 
 // ---------- Ergebnis je Zelle für die Gesamtauswertung (scripts/poc-local-recognition/evaluate.mjs) ----------
 const label = (p) => ROSTER.zeilen[p].name ?? ROSTER.zeilen[p].kuerzel;
-const toResult = (c) => ({ person: label(c.p), day: c.d + 1, expected: c.expected, raw: c.got, result: c.voted, uncertain: c.unsure });
+const toResult = (c) => ({ person: label(c.p), day: c.d + 1, expected: c.expected, raw: c.got, result: c.voted, uncertain: c.unsure, contrast: Math.round(c.std * 10) / 10 });
 fs.writeFileSync(`${outDir}/result.json`, JSON.stringify({ D: dcells.map(toResult), S: scells.map(toResult) }));
