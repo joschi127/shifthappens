@@ -40,12 +40,14 @@
         </ion-note>
 
         <div class="explain">
-          <button type="button" class="explain-toggle" :aria-expanded="explainTemplates" @click="explainTemplates = !explainTemplates">
+          <button type="button" class="explain-toggle" :aria-expanded="explainTemplates" aria-controls="explain-templates" @click="explainTemplates = !explainTemplates">
             <ion-icon :icon="informationCircleOutline" aria-hidden="true"></ion-icon>
             <span>Warum brauche ich Schicht-Vorlagen?</span>
-            <ion-icon :icon="explainTemplates ? chevronUpOutline : chevronDownOutline" aria-hidden="true"></ion-icon>
+            <ion-icon :icon="chevronDownOutline" class="chevron" :class="{ open: explainTemplates }" aria-hidden="true"></ion-icon>
           </button>
-          <div v-if="explainTemplates" class="explain-text">
+          <!-- Auf- und Zuklappen animiert: Zeilenhöhe des Rasters von 0fr auf 1fr -->
+          <div id="explain-templates" class="explain-collapse" :class="{ open: explainTemplates }" :aria-hidden="!explainTemplates" :inert="!explainTemplates">
+          <div class="explain-inner"><div class="explain-text">
             <p>
               Die App liest deinen Dienstplan direkt hier auf deinem Handy. Damit das zuverlässig klappt, muss sie wissen,
               welche Kürzel in deinem Plan vorkommen und welche Schicht jeweils dahintersteckt, z. B. „F01“ = Frühdienst von 6:00 bis 14:00.
@@ -61,6 +63,7 @@
               Beim Import tippst du es an, wählst die passende Vorlage und lässt es dir für das nächste Mal merken.
             </p>
             <router-link to="/shift-types">Zu den Schicht-Vorlagen</router-link>
+          </div></div>
           </div>
         </div>
 
@@ -211,7 +214,7 @@ import {
   IonList, IonItem, IonLabel, IonNote, IonSelect, IonSelectOption, IonProgressBar, IonModal, IonCheckbox,
   toastController, alertController, onIonViewWillEnter
 } from '@ionic/vue';
-import { addOutline, cameraOutline, chevronDownOutline, chevronUpOutline, imageOutline, informationCircleOutline, refreshOutline } from 'ionicons/icons';
+import { addOutline, cameraOutline, chevronDownOutline, imageOutline, informationCircleOutline, refreshOutline } from 'ionicons/icons';
 import { computed, onUnmounted, ref, shallowRef } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { db, ImportTemplate, ShiftType } from '../db';
@@ -267,7 +270,7 @@ const formats = ref<ImportTemplate[]>(IMPORT_FORMATS);
 const formatId = ref(IMPORT_FORMATS[0].id);
 const format = computed(() => formats.value.find(f => f.id === formatId.value) ?? IMPORT_FORMATS[0]);
 
-// Erklärung zu den Schicht-Vorlagen; aufgeklappt, solange noch keine Vorlage ein Kürzel hat
+// Erklärung zu den Schicht-Vorlagen, standardmäßig zugeklappt
 const explainTemplates = ref(false);
 
 // Bei jedem Betreten neu laden: Name und Vorlagen können zwischendurch in den Einstellungen geändert worden sein
@@ -281,7 +284,6 @@ onIonViewWillEnter(async () => {
   formats.value = mergeFormats(saved);
   const lastUsed = saved.find(s => s.lastUsed);
   if (lastUsed && !formatChosen) formatId.value = lastUsed.id;
-  if (!templates.value.some(t => t.codes?.length)) explainTemplates.value = true;
   // Zurück vom Anlegen einer Vorlage: unbekannte Kürzel, die jetzt passen, zuordnen
   if (step.value === 'confirm' && rematchUnknown(proposals.value, templates.value)) await refreshPlan();
   formatChosen = true;
@@ -606,6 +608,37 @@ const save = async () => {
 .explain-toggle ion-icon {
   font-size: 1.2rem;
   flex-shrink: 0;
+}
+
+.explain-toggle .chevron {
+  transition: transform 0.25s ease;
+}
+
+.explain-toggle .chevron.open {
+  transform: rotate(180deg);
+}
+
+.explain-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 0.3s ease, opacity 0.3s ease;
+}
+
+.explain-collapse.open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.explain-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .explain-collapse, .explain-toggle .chevron {
+    transition: none;
+  }
 }
 
 .explain-text {
