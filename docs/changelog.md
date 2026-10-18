@@ -3,6 +3,9 @@
 Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
 ## [Unreleased]
+- **Dokumentation:**
+  - Bestehende Funktionen nachträglich als PRDs dokumentiert (`docs/prd/`: Schicht-Vorlagen, Kalender, Datensicherung und Synchronisation), inkl. Abgleich mit dem tatsächlichen Stand im Code (z. B. Wochen-/Agenda-Ansicht, Schnelleingabe und Notizen noch offen).
+  - Bisherige Architekturentscheidungen nachträglich als ADR 0004–0009 dokumentiert (Tech-Stack, Offline First, Kopie der Vorlagenwerte, Zeit-/Datumsformat, Drive-Sync, Hosting & Konfiguration), jeweils mit bekannten Einschränkungen. Übersichten in `docs/adr/README.md` und `docs/prd/README.md`.
 - **Dienstplan-Import (Vorbereitung, Schritt 1):**
   - Schicht-Vorlagen haben ein neues Feld **„Schichtkürzel im Dienstplan“** (`ShiftType.codes`, mehrere Kürzel möglich). Es wird so eingegeben, wie die Schicht auf dem Papier-Dienstplan steht, und dient später der automatischen Erkennung. Doppelte Kürzel über mehrere Vorlagen hinweg werden beim Speichern abgelehnt.
   - Neuer Bereich **„Dienstplan-Import“** in den Einstellungen mit „Name im Dienstplan“ (voller Name, Vor-/Nachname, Initialen oder Kürzel, mehrere Schreibweisen möglich) und „Kürzel ohne Eintrag“ (z. B. frei, Urlaub, krank). Ein Kürzel kann nicht gleichzeitig Schichtkürzel und Kürzel ohne Eintrag sein.
