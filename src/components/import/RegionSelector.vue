@@ -46,17 +46,23 @@ const loupe = ref<HTMLCanvasElement | null>(null);
 const dragging = ref<number | null>(null);
 const handleLabels = ['Ecke oben links', 'Ecke oben rechts', 'Ecke unten rechts', 'Ecke unten links'];
 
-// Sichtbarer Ausschnitt (Bildkoordinaten): Bereich um die Ecken mit Rand oder das ganze Bild
+// Sichtbarer Ausschnitt (Bildkoordinaten): Bereich um die Ecken mit Rand oder das ganze Bild.
+// Der Ausschnitt darf über das Bild hinausgehen (grauer Rand), damit Ecken am Bildrand nie direkt am
+// Bildschirmrand liegen und sich mit dem Finger greifen lassen.
 const zoomed = ref(true);
 const view = ref({ x: 0, y: 0, w: 1, h: 1 });
 const fitView = () => {
   const { width, height } = props.image;
-  if (!zoomed.value) { view.value = { x: 0, y: 0, w: width, h: height }; return; }
+  if (!zoomed.value) {
+    const pad = Math.max(width, height) * 0.06;
+    view.value = { x: -pad, y: -pad, w: width + 2 * pad, h: height + 2 * pad };
+    return;
+  }
   const xs = props.corners.map(p => p[0]), ys = props.corners.map(p => p[1]);
   const bw = Math.max(...xs) - Math.min(...xs), bh = Math.max(...ys) - Math.min(...ys);
-  const mx = bw * 0.08 + 20, my = Math.max(bh * 0.6, bw * 0.12) + 20;
-  const x = Math.max(0, Math.min(...xs) - mx), y = Math.max(0, Math.min(...ys) - my);
-  view.value = { x, y, w: Math.min(width, Math.max(...xs) + mx) - x, h: Math.min(height, Math.max(...ys) + my) - y };
+  const mx = bw * 0.1 + 20, my = Math.max(bh * 0.6, bw * 0.12) + 20;
+  const x = Math.min(...xs) - mx, y = Math.min(...ys) - my;
+  view.value = { x, y, w: Math.max(...xs) + mx - x, h: Math.max(...ys) + my - y };
 };
 
 const draw = () => {
@@ -68,7 +74,13 @@ const draw = () => {
   source.getContext('2d')!.putImageData(new ImageData(new Uint8ClampedArray(props.image.data), props.image.width, props.image.height), 0, 0);
   fullImage = source;
   canvas.value.width = Math.round(w); canvas.value.height = Math.round(h);
-  canvas.value.getContext('2d')!.drawImage(source, x, y, w, h, 0, 0, w, h);
+  const ctx = canvas.value.getContext('2d')!;
+  ctx.fillStyle = '#9e9e9e';
+  ctx.fillRect(0, 0, w, h);
+  // nur den Teil des Bildes zeichnen, der im Ausschnitt liegt (Ausschnitt kann über das Bild hinausgehen)
+  const sx = Math.max(0, x), sy = Math.max(0, y);
+  const sw = Math.min(props.image.width, x + w) - sx, sh = Math.min(props.image.height, y + h) - sy;
+  if (sw > 0 && sh > 0) ctx.drawImage(source, sx, sy, sw, sh, sx - x, sy - y, sw, sh);
 };
 let fullImage: HTMLCanvasElement | null = null;
 onMounted(draw);
@@ -129,6 +141,11 @@ const endDrag = () => { dragging.value = null; };
 </script>
 
 <style scoped>
+.region-selector {
+  /* Abstand zum Bildschirmrand, damit Ecken am Rand mit dem Finger greifbar bleiben */
+  padding: 0 16px;
+}
+
 .stage {
   position: relative;
   width: 100%;

@@ -3,6 +3,7 @@
 Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
 ## [Unreleased]
+- **Dienstplan-Import, Bereichsauswahl:** Abstand zum Bildschirmrand und grauer Rand um das Bild, damit Ecken am Bildrand mit dem Finger greifbar bleiben (auch in „Ganzes Bild zeigen“).
 - **Dienstplan-Import, Funde aus dem Browser-Test:**
   - Die Nachprüfung der Blocksuche zählt keine einbuchstabigen Kürzel mehr (ein Zweitkürzel „S“ verschob den Block wegen „So“/„Sa“).
   - Das Seitenverhältnis wird nur nach überzeugender Erkennung gelernt (vorher verdarb ein Durchlauf mit falschen Ecken die nächste Suche).
