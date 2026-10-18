@@ -25,7 +25,18 @@ Ziel (vorläufig): Einträge in der Abwesenheitszeile (z. B. „U“ für Urlaub
 - **Abgleich mit der Dienstzeile:** An Tagen mit Abwesenheit steht in der Dienstzeile oft „-“. Das ist allenfalls ein schwaches Indiz und kein Beweis.
 - **Bestätigungsansicht:** Mehrere unsichere „U“ auf einmal bestätigen (z. B. „alle vorgeschlagenen U übernehmen“).
 
+## Abwesenheitskürzel
+
+Diese Kürzel werden berücksichtigt (festgelegt am 18.10.2026):
+
+| Kürzel | Bedeutung |
+|---|---|
+| `U` | Urlaub |
+| `K` | krank |
+| `FB` | Fortbildung |
+
+Die Nutzer legen sie als Schicht-Vorlagen der Art „Abwesenheit“ mit dem jeweiligen Kürzel an. Testbilder enthalten bisher nur „U“. Für „K“ und „FB“ fehlen noch Beispiele.
+
 ## Offene Fragen
 
-- Welche Abwesenheitskürzel kommen in echten Plänen vor (nur „U“ oder auch „K“, „FB“, „ÜF“ …)?
 - Wie viel Nachbestätigung ist für Nutzer akzeptabel?

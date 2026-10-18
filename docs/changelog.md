@@ -3,6 +3,8 @@
 Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
 ## [Unreleased]
+- **Dienstplan-Import, Umfang:** Pläne ohne Namen (Person nur über ein Kürzel, z. B. „AB“) sind offiziell nicht unterstützt; Hinweis in den Einstellungen, Eintrag im Ideen-Backlog für eine spätere, vermutlich KI-gestützte Prüfung.
+- **PRD-Entwurf Abwesenheiten:** Berücksichtigte Abwesenheitskürzel festgelegt: `U` (Urlaub), `K` (krank), `FB` (Fortbildung).
 - **Dienstplan-Import, besseres Foto anfordern:** Ist das Blatt so stark gewölbt, dass viele Tage nicht eindeutig zuzuordnen sind, bittet die App vor der Bestätigung um ein neues Foto („Neues Foto“ oder „Trotzdem prüfen“).
 - **Dienstplan-Import, genauere Blocksuche:** Namensspalte Feld für Feld lesen (Dokumentenmodus), Tagesspalten perspektivisch anpassen, Tabellenränder robuster finden, Lage und Höhe des Blocks anhand der Dienstkürzel nachprüfen. Im Regressionstest treffen jetzt 38 statt 31 von 46 Prüfungen.
 - **Roadmap und PRD-Entwurf:** „Abwesenheiten zuverlässiger erkennen“ als geplante Verbesserung aufgenommen.

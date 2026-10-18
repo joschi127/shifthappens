@@ -50,6 +50,7 @@ Hier werden Ideen gesammelt, deren Umsetzung noch nicht feststeht, die aber Pote
 
 - **Schicht-Vorlagen automatisch aus Foto anlegen:** Knopf „Automatisch aus Foto anlegen“ mit Kamera-Symbol bei den Schicht-Vorlagen. Erkennt Kürzel (und, falls vorhanden, Legende oder Uhrzeiten) aus einem Dienstplan und schlägt daraus Vorlagen samt Schichtkürzeln vor. Startet man im Kalender den Foto-Import, ohne dass Vorlagen existieren, wird direkt dorthin verwiesen. Baut auf dem [Dienstplan-Import](prd/dienstplan-import.md) auf.
 - **Dienstplan-Import aus PDF:** PDF-Dienstpläne (mit Seitenauswahl) zusätzlich zu Fotos und Bildern importieren. Bis dahin genügt ein Screenshot der PDF-Seite. Siehe [PRD Dienstplan-Import](prd/dienstplan-import.md), Schritt 3.
+- **Dienstplan-Import für Pläne ohne Namen:** Pläne, in denen die Person nur über ein Kürzel (z. B. „AB“) steht, sind derzeit nicht unterstützt. Später erneut prüfen, vermutlich nur mit KI-gestützter Erkennung sinnvoll möglich. Siehe [PRD Dienstplan-Import](prd/dienstplan-import.md), Einschränkungen.
 - **Rufbereitschaft:** Möglichkeit spezielle Rufbereitschafts-Schichten anzulegen.
 - **Smart-Checkout:** Automatisches Erkennen des Schichtendes über den Gerätestandort beim Verlassen des Arbeitsortes (Heimweg-Erkennung).
 - **Statistiken:** Auswertung von Arbeitszeiten und Schichtverteilungen.

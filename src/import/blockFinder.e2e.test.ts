@@ -48,7 +48,8 @@ afterAll(async () => {
   }
 });
 
-const examples = collectExamples();
+// Pläne ohne Namen (Variante 2, nur Kürzel) sind außerhalb des Umfangs (PRD Dienstplan-Import, Einschränkungen)
+const examples = collectExamples().filter(e => !e.image.startsWith('variante-2-'));
 describe.each(examples.map(e => [e.isLocal ? `local/${e.image}` : e.image, e] as const))('Blocksuche %s', (key, example) => {
   it('findet den eigenen Block in der richtigen Drehung (mindestens wie in der Referenz)', async () => {
     cache.clear();

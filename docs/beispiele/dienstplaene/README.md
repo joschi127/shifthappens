@@ -45,7 +45,7 @@ Geladen werden die erwarteten Werte in Tests über `loadReferenceRoster('variant
 ## Variante 2 (ohne Namensspalte)
 
 - **Inhalt:** Dieselben Schichten wie Variante 1. Die Person steht nur über ihr Kürzel in der ersten Spalte „Kz.“.
-- **Erkennung:** Der „Name im Dienstplan“ muss hier das Kürzel enthalten, z. B. „AB“.
+- **Nicht unterstützt:** Pläne ohne Namen sind außerhalb des Umfangs (siehe [PRD](../../prd/dienstplan-import.md), Einschränkungen). Die automatische Blocksuche wird für Variante 2 nicht geprüft. Die Erkennung mit von Hand gesetzten Ecken bleibt im Regressionstest.
 - **Herkunft der Bilder:** Beide Bilder sind per Skript abgeleitet, nicht abfotografiert.
   - **Saubere Version:** Die Namensspalte wurde pixelgenau entfernt.
   - **Foto:** Die Aufnahmeeffekte sind synthetisch. Für realistischere Testfotos die saubere PNG ausdrucken und mit dem Handy abfotografieren; die erwarteten Werte bleiben dann gültig.

@@ -39,9 +39,9 @@
               @update:model-value="updateProfile({ rosterNames: $event })"
             ></tag-list-input>
             <ion-note class="field-help">
-              So, wie du im Dienstplan geführt wirst: voller Name, nur Vor- oder Nachname, Initialen
-              oder ein Kürzel (z.B. „Müller, A.“ oder „AMü“). Mehrere Schreibweisen möglich,
-              etwa für verschiedene Arbeitgeber.
+              So, wie du im Dienstplan geführt wirst, z. B. „Müller, Anna“ oder nur „Müller“. Mehrere
+              Schreibweisen möglich, etwa für verschiedene Arbeitgeber. Pläne, in denen statt Namen nur
+              Kürzel stehen (z. B. „AMü“), werden nicht unterstützt.
             </ion-note>
           </div>
         </ion-item>
