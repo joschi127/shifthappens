@@ -62,3 +62,7 @@ browserconfig.xml
 /.aider*
 !/.aider.conf.yml
 !/.aider.conventions.md
+
+# Temporäre Eingabedateien (z. B. Beispiel-Dienstpläne), nur .gitkeep wird eingecheckt
+/temp/*
+!/temp/.gitkeep
