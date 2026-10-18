@@ -75,7 +75,7 @@
                 <p v-else>{{ shift.startTime }} - {{ shift.endTime }} <span v-if="shift.isSplitShift">/ {{ shift.splitStartTime }} - {{ shift.splitEndTime }}</span></p>
                 <p v-if="shift.review" class="review-reason">{{ shift.review.reason }}</p>
               </ion-label>
-              <ion-button v-if="shift.review" slot="end" size="small" fill="outline" color="warning" @click.stop="markReviewed(shift)">
+              <ion-button v-if="shift.review" slot="end" size="small" color="warning" @click.stop="markReviewed(shift)">
                 Geprüft
               </ion-button>
               <ion-note slot="end" v-else-if="shift.isNightStandby">Nachtbereitschaft</ion-note>
@@ -525,11 +525,11 @@ const deleteShift = async (id: number) => {
   text-shadow: none;
 }
 
-/* Prüfhinweis (ADR 0014): gelber Punkt im Indikator */
+/* Prüfhinweis (ADR 0014): gelber Punkt im Indikator, links, damit er auch bei Überhang am Rand sichtbar bleibt */
 .review-dot {
   position: absolute;
   top: 1px;
-  right: 1px;
+  left: 1px;
   width: 6px;
   height: 6px;
   border-radius: 50%;
