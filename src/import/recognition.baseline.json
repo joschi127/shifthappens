@@ -1,0 +1,46 @@
+{
+  "local/dienstplan-echt.jpeg": {
+    "duty": 14,
+    "absence": 20
+  },
+  "variante-1-foto.jpg": {
+    "duty": 0,
+    "absence": 0
+  },
+  "variante-1-sauber.png": {
+    "duty": 0,
+    "absence": 0
+  },
+  "variante-2-foto.jpg": {
+    "duty": 0,
+    "absence": 0
+  },
+  "variante-2-sauber.png": {
+    "duty": 0,
+    "absence": 0
+  },
+  "variante-3-foto.jpg": {
+    "duty": 2,
+    "absence": 3
+  },
+  "variante-3-sauber.png": {
+    "duty": 0,
+    "absence": 0
+  },
+  "variante-4-foto.jpg": {
+    "duty": 4,
+    "absence": 5
+  },
+  "variante-4-sauber.png": {
+    "duty": 2,
+    "absence": 2
+  },
+  "variante-5-foto.jpg": {
+    "duty": 13,
+    "absence": 0
+  },
+  "variante-5-sauber.png": {
+    "duty": 9,
+    "absence": 0
+  }
+}
