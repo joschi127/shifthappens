@@ -14,6 +14,7 @@
 - **Mobile First auch beim Testen:** Oberflächen werden zuerst in Smartphone-Größe geprüft (z. B. 390 × 844 bzw. 390 × 740 px), Desktop nur ergänzend. Lässt sich das Browserfenster nicht verkleinern (z. B. bei automatisierten Browser-Tests), die App über eine Seite desselben Dev-Servers in einem `<iframe>` dieser Größe laden.
 - Dabei besonders auf Touch-Bedienung, Lesbarkeit kleiner Elemente, Überhänge am Bildschirmrand und Kontraste achten.
 - Automatisierte Tests: `npm test` (schnell, bei jeder Änderung).
+- Regressionstest der Dienstplan-Erkennung: `npm run test:recognition` (dauert einige Minuten), bei jeder Änderung an `src/import/` und vor dem Push solcher Änderungen. Neue Beispielbilder mit erwarteten Werten kommen nach `docs/beispiele/dienstplaene/` (öffentlich) bzw. `local/dienstplaene/` (privat).
 
 ## Sprache
 - **Code auf Englisch:** Datei- und Ordnernamen im Code (`src/`, `scripts/`), Funktionen, Variablen, Typen, Felder im Datenmodell, npm-Skripte und Umgebungsvariablen (z. B. `backupService.ts`, `shiftFromType`, `rosterNames`, `test:watch`).

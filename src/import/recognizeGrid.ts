@@ -36,6 +36,13 @@ export interface PersonResult {
 export interface RecognitionOptions {
   templateMin?: number;     // Mindestähnlichkeit, um per Muster zu entscheiden
   templateMargin?: number;  // Mindestabstand zum zweitbesten Muster
+  /**
+   * Personenblöcke, die nur als zusätzliche Beispiele dienen (z. B. Nachbarzeilen des eigenen Blocks).
+   * Sie fließen nur in Schwellen und Muster ein, wenn sie wie eine Planzeile aussehen
+   * (genug sicher gelesene bekannte Kürzel); sonst (z. B. Kopfzeile, Legende) werden sie ignoriert
+   * und alle ihre Zellen sind unsicher.
+   */
+  auxiliaryPersons?: number[];
   onProgress?: (done: number, total: number) => void;
 }
 
@@ -105,12 +112,28 @@ export async function recognizeGrid(grid: Grid, layout: GridLayout, vocabulary: 
     results.push(result);
   }
 
-  resolveDuty(dutyCells, known, templateMin, templateMargin);
-  if (layout.absenceRow !== undefined) resolveAbsence(absenceCells, vocabulary.absence, templateMin, templateMargin);
+  const ignored = implausiblePersons(dutyCells, options.auxiliaryPersons ?? [], known, grid.cols);
+  for (const c of [...dutyCells, ...absenceCells]) if (ignored.has(c.person)) c.uncertain = true;
+  const used = (c: WorkCell) => !ignored.has(c.person);
+  resolveDuty(dutyCells.filter(used), known, templateMin, templateMargin);
+  if (layout.absenceRow !== undefined) resolveAbsence(absenceCells.filter(used), vocabulary.absence, templateMin, templateMargin);
 
   for (const c of dutyCells) results[c.person].duty[c.day] = toResult(c);
   for (const c of absenceCells) (results[c.person].absence ??= [])[c.day] = toResult(c);
   return results;
+}
+
+/**
+ * Hilfsblöcke, die nicht wie eine Planzeile aussehen: weniger als ein Viertel der Tage (mindestens 3)
+ * mit einem bekannten Kürzel. Tageszahlen der Kopfzeile oder Legendentext erfüllen das nicht.
+ */
+export function implausiblePersons(cells: { person: number; got: string }[], auxiliary: number[], known: string[], days: number): Set<number> {
+  const ignored = new Set<number>();
+  for (const p of auxiliary) {
+    const hits = cells.filter(c => c.person === p && known.includes(snapToKnown(c.got, known))).length;
+    if (hits < Math.max(3, days / 4)) ignored.add(p);
+  }
+  return ignored;
 }
 
 const toResult = (c: WorkCell): CellResult => ({

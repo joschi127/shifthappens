@@ -3,6 +3,9 @@
 Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
 ## [Unreleased]
+- **Dienstplan-Import, Erkennung mit Nachbarblöcken:** Die Blöcke direkt über und unter dem eigenen werden als zusätzliche Vergleichsmuster mit ausgewertet, übernommen wird weiterhin nur die eigene Zeile. Kopfzeilen und Legenden werden dabei erkannt und ignoriert. Der Regressionstest prüft diesen Modus zusätzlich.
+- **Dienstplan-Import, Seitenverhältnis:** Das gelernte Seitenverhältnis des Blocks wird nur noch übernommen, wenn es plausibel ist (Schutz vor verrutschten Ecken).
+- **Kalender, heller Modus:** Fehlende Graustufen-Variablen ergänzt; Rahmen, Wochentagszeile und gedimmte Texte im Kalender werden im hellen Modus wieder richtig dargestellt.
 - **Open-Source-Lizenzen:** Neuer Eintrag in den Einstellungen („Über die App“ → „Open-Source-Lizenzen“) mit allen ausgelieferten Fremdbibliotheken und ihren Lizenztexten. Die Liste (`licenses.json`) entsteht beim Build automatisch aus dem Bundle, ergänzt um Texterkennung, Sprachdaten und Service Worker, und ist offline verfügbar ([ADR 0015](adr/0015-open-source-lizenzen-beim-build-erzeugen.md)).
 - **Roadmap:** PDF-Import des Dienstplans ins Ideen-Backlog verschoben.
 - **Dienstplan-Import, Schritte 3–6 (Eingabe, Bereich, Erkennung, Bestätigung):**

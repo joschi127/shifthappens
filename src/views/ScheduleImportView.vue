@@ -174,15 +174,15 @@ import { db, ImportTemplate, ShiftType } from '../db';
 import RegionSelector from '../components/import/RegionSelector.vue';
 import { getImportProfile, getImportTemplates, saveImportTemplates } from '../services/importSettingsService';
 import { markLocalModified } from '../services/googleDriveService';
-import { buildGrid, Quad, warpQuad } from '../import/geometry';
+import { Quad } from '../import/geometry';
 import { Raster, rotate90 } from '../import/raster';
 import { ImageInputError, loadImageFile } from '../import/imageInput';
 import { getBrowserEngine, releaseBrowserEngine } from '../import/browserEngine';
 import { findBlock } from '../import/blockFinder';
-import { recognizeGrid } from '../import/recognizeGrid';
+import { recognizeOwnBlock } from '../import/recognizeOwnBlock';
 import { DayProposal, DayReading, ProposalItem, resolveShifts } from '../import/resolveShifts';
 import { ImportPlan, PlannedShift, planImport } from '../import/importPlan';
-import { IMPORT_FORMATS, mergeFormats } from '../import/formats';
+import { IMPORT_FORMATS, learnedBlockRatio, mergeFormats } from '../import/formats';
 import { parseShiftCode, sameShiftCode } from '../utils/shiftCodes';
 
 const route = useRoute();
@@ -325,13 +325,11 @@ const proposals = ref<DayProposal[]>([]);
 const plan = ref<ImportPlan | null>(null);
 const applyRemovals = ref(true);
 
+// Seitenverhältnis des bestätigten Blocks für die nächste automatische Suche merken
 const learnBlockRatio = async () => {
-  const [tl, tr, br, bl] = corners.value;
-  const width = (Math.hypot(tr[0] - tl[0], tr[1] - tl[1]) + Math.hypot(br[0] - bl[0], br[1] - bl[1])) / 2;
-  const height = (Math.hypot(bl[0] - tl[0], bl[1] - tl[1]) + Math.hypot(br[0] - tr[0], br[1] - tr[1])) / 2;
-  const blockRatio = Math.round((height / (width / daysInMonth.value)) * 100) / 100;
+  const learned = learnedBlockRatio(corners.value, daysInMonth.value, format.value);
   const saved = (await getImportTemplates()).map(t => ({ ...t, lastUsed: false }));
-  const entry = { ...format.value, blockRatio, lastUsed: true };
+  const entry = { ...format.value, blockRatio: learned ?? format.value.blockRatio, lastUsed: true };
   await saveImportTemplates([...saved.filter(t => t.id !== entry.id), entry]);
   formats.value = mergeFormats([...saved.filter(t => t.id !== entry.id), entry]);
 };
@@ -354,10 +352,10 @@ const runRecognition = async () => {
   try {
     await learnBlockRatio();
     const f = format.value;
-    const subRows = f.subRows ?? 1;
-    const grid = buildGrid(warpQuad(image.value, corners.value, daysInMonth.value * 64, subRows * 34), daysInMonth.value, subRows);
     const engine = await getBrowserEngine();
-    const [person] = await recognizeGrid(grid, { persons: 1, subRows, dutyRow: f.dutyRow ?? 0, absenceRow: f.absenceRow, standbyRow: f.standbyRow },
+    // Nachbarblöcke dienen nur als zusätzliche Beispiele, übernommen wird nur der eigene Block
+    const person = await recognizeOwnBlock(image.value, corners.value, daysInMonth.value,
+      { subRows: f.subRows ?? 1, dutyRow: f.dutyRow ?? 0, absenceRow: f.absenceRow, standbyRow: f.standbyRow },
       vocabulary(), engine, { onProgress: (done, total) => { progress.value = done / total; } });
     const days: DayReading[] = person.duty.map((duty, d) => ({ duty, absence: person.absence?.[d], standby: person.standby?.[d] }));
     proposals.value = resolveShifts(days, { templates: templates.value, ignoreCodes: ignoreCodes.value, year: year.value, month: month.value });

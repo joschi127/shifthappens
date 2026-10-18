@@ -39,6 +39,27 @@ export const applyHomography = (h: number[], [x, y]: Point): Point => {
   return [(h[0] * x + h[1] * y + h[2]) / d, (h[3] * x + h[4] * y + h[5]) / d];
 };
 
+/**
+ * Teil eines Vierecks bzw. seine Verlängerung nach oben und unten, in Blockhöhen gemessen:
+ * from = 0, to = 1 ist das Viereck selbst; from = -1 nimmt einen gleich hohen Block darüber dazu.
+ * Rechnet über die Homographie, bleibt also auch bei schräg fotografierten Plänen perspektivisch richtig.
+ */
+export function quadSlice(corners: Quad, from: number, to: number): Quad {
+  const h = homography([[0, 0], [1, 0], [1, 1], [0, 1]], corners);
+  return [applyHomography(h, [0, from]), applyHomography(h, [1, from]), applyHomography(h, [1, to]), applyHomography(h, [0, to])];
+}
+
+const insideImage = (img: { width: number; height: number }, quad: Quad) =>
+  quad.every(([x, y]) => x >= 0 && y >= 0 && x <= img.width - 1 && y <= img.height - 1);
+
+/** Wie viele gleich hohe Blöcke über und unter dem Viereck (je höchstens max) noch im Bild liegen */
+export function neighborBlocks(img: { width: number; height: number }, corners: Quad, max: number): { above: number; below: number } {
+  let above = 0, below = 0;
+  while (above < max && insideImage(img, quadSlice(corners, -(above + 1), 0))) above++;
+  while (below < max && insideImage(img, quadSlice(corners, 1, below + 2))) below++;
+  return { above, below };
+}
+
 // Bereich innerhalb des Vierecks auf ein Rechteck W x H entzerren (bilinear)
 export function warpQuad(img: Raster, corners: Quad, W: number, H: number): Raster {
   const h = homography([[0, 0], [W, 0], [W, H], [0, H]], corners);
