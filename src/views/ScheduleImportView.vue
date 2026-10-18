@@ -39,6 +39,31 @@
           <router-link to="/shift-types">Zu den Schicht-Vorlagen</router-link>
         </ion-note>
 
+        <div class="explain">
+          <button type="button" class="explain-toggle" :aria-expanded="explainTemplates" @click="explainTemplates = !explainTemplates">
+            <ion-icon :icon="informationCircleOutline" aria-hidden="true"></ion-icon>
+            <span>Warum brauche ich Schicht-Vorlagen?</span>
+            <ion-icon :icon="explainTemplates ? chevronUpOutline : chevronDownOutline" aria-hidden="true"></ion-icon>
+          </button>
+          <div v-if="explainTemplates" class="explain-text">
+            <p>
+              Die App liest deinen Dienstplan direkt hier auf deinem Handy. Damit das zuverlässig klappt, muss sie wissen,
+              welche Kürzel in deinem Plan vorkommen und welche Schicht jeweils dahintersteckt, z. B. „F01“ = Frühdienst von 6:00 bis 14:00.
+            </p>
+            <ul>
+              <li><strong>Weniger Lesefehler:</strong> Die App sucht gezielt nach deinen Kürzeln und verwechselt dadurch seltener, z. B. eine 0 mit einem O.</li>
+              <li><strong>Kein Raten:</strong> Nur Kürzel, die sie kennt, trägt sie direkt ein. Alles andere zeigt sie dir zum Nachschauen.</li>
+              <li><strong>Gleich die richtigen Zeiten:</strong> Über die Vorlage weiß sie Beginn, Ende und Pausen deiner Schicht.</li>
+            </ul>
+            <p>
+              Am besten legst du deine üblichen Schichten einmal an und trägst bei jeder das Kürzel aus deinem Plan ein.
+              Urlaub oder Krankheit legst du als Vorlage der Art „Abwesenheit“ an. Taucht später ein neues Kürzel auf, ist das kein Problem:
+              Beim Import tippst du es an, wählst die passende Vorlage und lässt es dir für das nächste Mal merken.
+            </p>
+            <router-link to="/shift-types">Zu den Schicht-Vorlagen</router-link>
+          </div>
+        </div>
+
         <ion-button expand="block" @click="cameraInput?.click()">
           <ion-icon slot="start" :icon="cameraOutline"></ion-icon>
           Foto aufnehmen
@@ -169,7 +194,7 @@ import {
   IonList, IonItem, IonLabel, IonNote, IonSelect, IonSelectOption, IonProgressBar, IonModal, IonCheckbox,
   toastController, alertController, onIonViewWillEnter
 } from '@ionic/vue';
-import { cameraOutline, imageOutline, refreshOutline } from 'ionicons/icons';
+import { cameraOutline, chevronDownOutline, chevronUpOutline, imageOutline, informationCircleOutline, refreshOutline } from 'ionicons/icons';
 import { computed, onUnmounted, ref, shallowRef } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { db, ImportTemplate, ShiftType } from '../db';
@@ -224,6 +249,9 @@ const formats = ref<ImportTemplate[]>(IMPORT_FORMATS);
 const formatId = ref(IMPORT_FORMATS[0].id);
 const format = computed(() => formats.value.find(f => f.id === formatId.value) ?? IMPORT_FORMATS[0]);
 
+// Erklärung zu den Schicht-Vorlagen; aufgeklappt, solange noch keine Vorlage ein Kürzel hat
+const explainTemplates = ref(false);
+
 // Bei jedem Betreten neu laden: Name und Vorlagen können zwischendurch in den Einstellungen geändert worden sein
 let formatChosen = false;
 onIonViewWillEnter(async () => {
@@ -235,6 +263,7 @@ onIonViewWillEnter(async () => {
   formats.value = mergeFormats(saved);
   const lastUsed = saved.find(s => s.lastUsed);
   if (lastUsed && !formatChosen) formatId.value = lastUsed.id;
+  if (!templates.value.some(t => t.codes?.length)) explainTemplates.value = true;
   formatChosen = true;
 });
 
@@ -480,6 +509,55 @@ const save = async () => {
 </script>
 
 <style scoped>
+.explain {
+  margin: 0 16px 16px;
+}
+
+.explain-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--ion-color-primary);
+  font-size: 0.95rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.explain-toggle span {
+  flex: 1;
+}
+
+.explain-toggle ion-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.explain-text {
+  padding: 4px 12px 12px;
+  border-left: 3px solid var(--ion-color-primary);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--ion-color-step-800, #333333);
+}
+
+.explain-text p {
+  margin: 8px 0;
+}
+
+.explain-text ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.explain-text li {
+  margin-bottom: 6px;
+}
+
 .intro, .step-text {
   color: var(--ion-color-step-700, #4d4d4d);
   font-size: 0.95rem;
