@@ -28,6 +28,7 @@ Eine mobile Progressive Web App (PWA) zur Verwaltung von persönlichen Dienst- u
 2. Entwicklungs-Server starten: `npm run dev`
 3. Produktions-Build erstellen: `npm run build`
 4. Tests ausführen: `npm test` (bzw. `npm run test:watch` während der Entwicklung)
+5. Regressionstest der Dienstplan-Erkennung (dauert einige Minuten): `npm run test:recognition`
 
 ## Deployment (GitHub Pages)
 

@@ -1,5 +1,7 @@
 # PoC: lokale Erkennung von Dienstplänen
 
+> Die produktive Umsetzung liegt inzwischen in `src/import/` (Regressionstest: `npm run test:recognition`). Diese Skripte bleiben für Experimente mit neuen Verfahren und Bildern.
+
 Simulationsskripte für den [Dienstplan-Import](../../docs/prd/dienstplan-import.md). Sie bilden den geplanten Ablauf in Node nach, mit derselben Bibliothek wie später im Browser (`tesseract.js`). Sie sind **kein Produktivcode**, sondern Vorlage für `src/import/`. Ergebnisse und Einordnung: [ADR 0001](../../docs/adr/0001-texterkennung-lokal-vor-cloud.md).
 
 ## Vorbereitung

@@ -39,6 +39,7 @@ Erweiterung um intelligente Features und Exporte.
   - **Backup & Sync** *(umgesetzt)*: Serverlose Synchronisation der App-Daten über das versteckte Google Drive Anwendungsdatenverzeichnis (`appDataFolder`). Siehe [PRD](prd/datensicherung-und-sync.md), [ADR 0008](adr/0008-sync-ueber-google-drive-appdata.md).
   - **Kalender-Abonnement (.ics)** *(offen)*: Generierung einer iCalendar-Datei (`.ics`) im regulären Google Drive des Nutzers mit öffentlichem Freigabelink zur Einbindung in Outlook, Apple Calendar oder Google Calendar. Automatische Neuerstellung bei Datenänderungen. Siehe [PRD](prd/kalender-teilen.md), [ADR 0011](adr/0011-kalender-teilen-per-ics-im-drive.md) (PoC ausstehend).
 - **Dienstplan-Import per Foto/PDF** *(in Arbeit)*: Papier- oder PDF-Dienstplan fotografieren bzw. hochladen; die App erkennt nur die eigene Zeile und trägt die Schichten nach Bestätigung ein. Anforderungen: [PRD](prd/dienstplan-import.md), Entscheidungen: [ADRs](adr/).
+- **Open-Source-Lizenzen anzeigen:** Beim Build automatisch erzeugte Liste der verwendeten Bibliotheken mit Lizenztexten (u. a. Vue, Ionic, Dexie, tesseract.js inkl. Sprachdaten) und ein Eintrag „Open-Source-Lizenzen“ in den Einstellungen. Hintergrund: Die Lizenzen (MIT, BSD, Apache-2.0) verlangen, dass Copyright-Hinweise und Lizenztexte bei der Weitergabe mitgeliefert werden.
 - **Export-Funktionen:** Export des Plans als PDF oder Text für Messenger-Dienste.
 
 ---

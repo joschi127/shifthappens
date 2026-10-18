@@ -3,6 +3,12 @@
 Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
 ## [Unreleased]
+- **Dienstplan-Import, Schritte 3–6 (Eingabe, Bereich, Erkennung, Bestätigung):**
+  - Neue Ansicht „Dienstplan importieren“ (`/import`), erreichbar über das Kamera-Symbol im Kalender (übernimmt den angezeigten Monat) und die Startseite: Foto aufnehmen oder Bild wählen, Monat und Aufbau je Person wählen, eigene Zeile wird automatisch gesucht (bei Bedarf im um 90° gedrehten Bild), Ecken mit Lupe korrigierbar, Erkennung lokal auf dem Gerät, Bestätigungsansicht mit Zuordnung per Antippen („Kürzel merken“, „Kein Eintrag“), Konflikte mit eigenen Schichten, Speichern mit Herkunft und Prüfhinweis; ein erneuter Import überschreibt früher importierte Schichten des Monats.
+  - Erkennungsbibliothek in TypeScript (`src/import/`), portiert aus der Simulation inkl. aller Schutzregeln; zusätzlich werden auffällig kurze Kürzel (z. B. „S“ in einem Plan mit dreistelligen Kürzeln) als unsicher markiert.
+  - Regressionstest `npm run test:recognition` über alle Beispielbilder (keine sicher falsche Zelle, handschriftliche Korrekturen unsicher, unsichere Zellen höchstens wie in der Referenz).
+  - Texterkennung `tesseract.js` 7.0.0 mit fest eingetragenen Versionen; Worker, WebAssembly-Kern und Sprachdaten werden selbst ausgeliefert (`public/tesseract/`, vor `dev`/`build` kopiert) und vom Service Worker erst beim ersten Einsatz gecacht.
+  - PDF-Dateien werden noch nicht unterstützt (klarer Hinweis), HEIC nur, wenn der Browser es lesen kann.
 - **Dienstplan-Import, Schritt 2 (Datenmodell II):**
   - Schicht-Vorlagen haben eine **Art** „Schicht“ oder „Abwesenheit“ (ADR 0012). Abwesenheiten sind ganztägig, ohne Uhrzeiten, Pause, Bereitschaft oder geteilte Schicht; im Editor werden die Zeitfelder ausgeblendet. Im Kalender erscheinen Abwesenheiten als gestrichelter Umriss, in der Tagesliste als „Ganztägig (Abwesenheit)“.
   - **Kombinierte Schichtkürzel** über zwei Tage, z. B. „N01 + B11 + F02“ (ADR 0013): Prüfung der Schreibweise, einheitliche Schreibweise beim Speichern, Eindeutigkeit über alle Vorlagen, Rückfrage, wenn Bereitschaft oder zweiter Teil an der Vorlage fehlen. Hilfsfunktionen in `src/utils/shiftCodes.ts`.

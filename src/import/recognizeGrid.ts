@@ -146,6 +146,9 @@ function resolveDuty(cells: WorkCell[], known: string[], minScore: number, margi
     c.uncertain = true;
   }
 
+  // Auffällig kurze Kürzel (z. B. "S", wenn der Plan sonst dreistellige Kürzel hat) entstehen leicht aus Rauschen
+  downgradeShortCodes(cells);
+
   // Muster pro Plan aus sicher gelesenen Zellen (inkl. "-"), Vergleich mit Verschiebungstoleranz
   const examples = new Map<string, Patch[]>();
   for (const c of cells) {
@@ -160,6 +163,23 @@ function resolveDuty(cells: WorkCell[], known: string[], minScore: number, margi
     if (!b1) continue;
     c.suggestion = b1.code;
     if (b1.score >= minScore && (!b2 || b1.score - b2.score >= margin)) { c.value = b1.code; c.uncertain = false; }
+  }
+}
+
+/**
+ * Ein gültiges, aber deutlich kürzeres Kürzel als die übrigen sicher gelesenen Kürzel des Plans
+ * wird unsicher (mit dem Kürzel als Vorschlag). Pläne mit durchweg kurzen Kürzeln sind nicht betroffen.
+ */
+export function downgradeShortCodes(cells: { value: string; uncertain: boolean; suggestion?: string }[]): void {
+  const lengths = new Map<number, number>();
+  for (const c of cells) if (!c.uncertain && !isFreeCode(c.value)) lengths.set(c.value.length, (lengths.get(c.value.length) ?? 0) + 1);
+  if (!lengths.size) return;
+  const typical = [...lengths.entries()].sort((a, b) => b[1] - a[1])[0][0];
+  for (const c of cells) {
+    if (!c.uncertain && !isFreeCode(c.value) && c.value.length < typical) {
+      c.uncertain = true;
+      c.suggestion = c.value;
+    }
   }
 }
 

@@ -161,14 +161,23 @@ Simulation mit `tesseract.js` 7 in Node, Skripte und beste Einstellung in [`scri
    - Art der Vorlage (`kind`, ADR 0012), mit Editor und Kalenderanzeige von Abwesenheiten
    - Herkunft und Prüfhinweis an Schichten (ADR 0014), mit gelbem „?!“ und „Geprüft“
    - Zerlegung und Prüfung kombinierter Kürzel (ADR 0013) im Vorlagen-Editor
-3. **Eingabe:** Kamera und Datei, Normalisierung, Drehen, HEIC-Hinweis, PDF mit Seitenauswahl.
-4. **Bereich und Raster:** automatische Blocksuche (Name, Tageszahlen, Gitterlinien), Viereck mit Lupe zur Kontrolle, Entzerrung, Einrasten auf Gitterlinien, Unterzeilen und Rollen in der Import-Vorlage, Monat und Jahr.
-5. **Lokale Erkennung:** Tesseract.js im Browser (selbst ausgeliefert, vom Service Worker gecacht) mit dem Verfahren aus der Simulation: Streifen-Erkennung, Einrasten, Muster pro Plan, Unsicherheit. Die Simulation dient als Regressionstest (Variante 3 als Vitest-Test, echter Plan lokal).
-6. **Kürzel auflösen, Bestätigungsansicht, Speichern, erneuter Import.**
+3. ✅ **Eingabe:** Kamera und Datei, Normalisierung (EXIF-Drehung, Metadaten verworfen, Verkleinerung), Drehen (auch automatisch, wenn der Name nur im gedrehten Bild gefunden wird), Hinweis bei HEIC. **Offen:** PDF mit Seitenauswahl (bisher Hinweis „noch nicht unterstützt“).
+4. ✅ **Bereich und Raster:** automatische Blocksuche (Name, Tageszahlen, Gitterlinien), Viereck mit Lupe zur Kontrolle, Entzerrung, Einrasten auf Gitterlinien, Unterzeilen und Rollen in der Import-Vorlage, Monat und Jahr.
+5. ✅ **Lokale Erkennung:** Tesseract.js im Browser (selbst ausgeliefert, vom Service Worker gecacht) mit dem Verfahren aus der Simulation: Streifen-Erkennung, Einrasten, Muster pro Plan, Unsicherheit. Die Simulation dient als Regressionstest (Variante 3 als Vitest-Test, echter Plan lokal).
+6. ✅ **Kürzel auflösen, Bestätigungsansicht, Speichern, erneuter Import.**
 7. **PDF-Textebene** als eigener Erkennungsweg.
 8. **Ergänzungen:** Erkennung von Durchstreichungen (Variante 4), Nutzerzuordnung auf ähnliche Zellen übernehmen.
 9. **Doku:** README (Einrichtung), Datenschutzhinweis.
 10. (Nur falls nötig) Cloud-Erkennung über Firebase AI Logic mit App Check, mit eigenem ADR (siehe ADR 0001).
+
+## Umsetzung (Stand 18.10.2026)
+
+- **Bibliothek** in `src/import/`: `raster.ts`, `geometry.ts` (Entzerrung, Raster mit Zeilengrenzen pro Spalte), `cellImage.ts` (Zellaufbereitung, Streifen, Muster), `codeReading.ts` (Bereinigen, Einrasten), `recognizeGrid.ts` (Erkennung inkl. aller Schutzregeln), `blockFinder.ts` (automatische Blocksuche), `resolveShifts.ts` (Kürzel → Vorschläge), `importPlan.ts` (Abgleich mit vorhandenen Schichten), `ocr.ts`/`tesseractEngine.ts`/`browserEngine.ts` (Texterkennung), `imageInput.ts`, `formats.ts`.
+- **Oberfläche:** `src/views/ScheduleImportView.vue` (Route `/import`, Einstieg über das Kamera-Symbol im Kalender und die Startseite), `src/components/import/RegionSelector.vue` (Ausschnitt um den Block, nächstgelegene Ecke greifen, Lupe).
+- **Tesseract** (Version fest: `tesseract.js` 7.0.0, Sprachdaten `@tesseract.js-data/eng` 1.0.0, `best_int`) wird selbst ausgeliefert: `scripts/copy-tesseract-assets.mjs` kopiert vor `dev`/`build` nach `public/tesseract/`; der Service Worker lädt die Dateien beim ersten Einsatz (ca. 7 MB) und cacht sie.
+- **Tests:** `npm test` (Bibliothek, Auflösung, Abgleich) und `npm run test:recognition` (Regressionstest über alle Beispielbilder, ca. 2–3 Minuten, Referenz in `src/import/recognition.baseline.json`).
+- **Im Browser geprüft** (Smartphone-Größe, Variante 3 Foto, Name „Lindner, Sophie“): Blocksuche inkl. automatischer Drehung in ca. 6 s, Erkennung in ca. 4 s, alle 23 Einträge richtig, erneuter Import überschreibt dieselben Schichten.
+- **Erkenntnis aus dem Browser-Test:** Browser und Node lesen nicht in jeder Zelle identisch (andere Bilddekodierung bzw. WebAssembly-Variante). Ein im Browser aus einer leeren Zelle gelesenes „S“ wurde als Kürzel „S“ (zusätzliches Kürzel am Spätdienst) sicher übernommen. Gegenmaßnahme: Kürzel, die deutlich kürzer sind als die übrigen sicher gelesenen Kürzel des Plans, werden unsicher. Der Regressionstest läuft weiterhin in Node; ein Browser-Lauf bleibt als Ergänzung sinnvoll.
 
 ## Geplante Module
 

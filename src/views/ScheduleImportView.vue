@@ -65,7 +65,7 @@
               <ion-icon slot="start" :icon="refreshOutline"></ion-icon>
               Drehen
             </ion-button>
-            <ion-button fill="clear" size="small" :disabled="busy" @click="findOwnBlock">Automatisch suchen</ion-button>
+            <ion-button fill="clear" size="small" :disabled="busy" @click="findOwnBlock()">Automatisch suchen</ion-button>
           </div>
           <ion-button expand="block" :disabled="busy" @click="runRecognition">Weiter: Erkennen</ion-button>
           <ion-button expand="block" fill="clear" @click="reset">Anderes Bild</ion-button>
@@ -274,10 +274,12 @@ const rotate = async (direction: 'cw' | 'ccw') => {
   if (!image.value) return;
   image.value = rotate90(image.value, direction);
   corners.value = defaultCorners(image.value);
-  await findOwnBlock();
+  await findOwnBlock(false);
 };
 
-const findOwnBlock = async () => {
+// Sucht den eigenen Block; findet sie nichts, werden (beim ersten Versuch) beide Drehungen um 90° probiert,
+// denn Querformat-Pläne werden oft im Hochformat fotografiert
+const findOwnBlock = async (tryRotations = true) => {
   if (!image.value) return;
   if (!rosterNames.value.length) {
     corners.value = defaultCorners(image.value);
@@ -287,8 +289,17 @@ const findOwnBlock = async () => {
   busy.value = true; busyText.value = 'Deine Zeile wird gesucht (beim ersten Mal werden die Erkennungsdaten geladen) …'; progress.value = null;
   try {
     const engine = await getBrowserEngine();
-    const { words } = await engine.recognize(image.value, { mode: 'sparse' });
-    const match = findBlock(image.value, words, { rosterNames: rosterNames.value, days: daysInMonth.value, blockRatio: format.value.blockRatio ?? 2.9 });
+    const search = async (img: Raster) => {
+      const { words } = await engine.recognize(img, { mode: 'sparse' });
+      return findBlock(img, words, { rosterNames: rosterNames.value, days: daysInMonth.value, blockRatio: format.value.blockRatio ?? 2.9 });
+    };
+    let match = await search(image.value);
+    for (const direction of tryRotations && !match ? (['cw', 'ccw'] as const) : []) {
+      busyText.value = 'Deine Zeile wird im gedrehten Bild gesucht …';
+      const rotated = rotate90(image.value, direction);
+      match = await search(rotated);
+      if (match) { image.value = rotated; break; }
+    }
     if (match) {
       corners.value = match.corners;
       regionMessage.value = match.partialName
@@ -432,7 +443,9 @@ const save = async () => {
   if (unknown) {
     const alert = await alertController.create({
       header: 'Nicht zugeordnete Kürzel',
-      message: `${unknown} Kürzel sind keiner Vorlage zugeordnet und werden nicht übernommen.`,
+      message: unknown === 1
+        ? 'Ein Kürzel ist keiner Vorlage zugeordnet und wird nicht übernommen.'
+        : `${unknown} Kürzel sind keiner Vorlage zugeordnet und werden nicht übernommen.`,
       buttons: [{ text: 'Zurück', role: 'cancel' }, { text: 'Trotzdem speichern', role: 'confirm' }]
     });
     await alert.present();
@@ -464,7 +477,7 @@ const save = async () => {
 
 <style scoped>
 .intro, .step-text {
-  color: var(--ion-color-step-700);
+  color: var(--ion-color-step-700, #4d4d4d);
   font-size: 0.95rem;
 }
 
@@ -507,7 +520,7 @@ const save = async () => {
 
 .weekday {
   font-size: 0.75rem;
-  color: var(--ion-color-step-600);
+  color: var(--ion-color-step-600, #666666);
 }
 
 .items {
@@ -519,7 +532,7 @@ const save = async () => {
 }
 
 .chip {
-  border: 2px solid var(--ion-color-step-300);
+  border: 2px solid var(--ion-color-step-300, #c8c8c8);
   border-radius: 16px;
   padding: 6px 12px;
   min-height: 36px;
@@ -539,7 +552,7 @@ const save = async () => {
 }
 
 .chip.free {
-  color: var(--ion-color-step-500);
+  color: var(--ion-color-step-500, #808080);
 }
 
 .flag {
@@ -563,7 +576,7 @@ const save = async () => {
 }
 
 .muted {
-  color: var(--ion-color-step-600);
+  color: var(--ion-color-step-600, #666666);
   font-size: 0.85rem;
 }
 
