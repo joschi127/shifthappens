@@ -137,6 +137,19 @@ Simulation mit `tesseract.js` 7 in Node, Skripte und beste Einstellung in [`scri
 - **Erfolgskriterium erfüllt:** keine sicher falsche Zelle, höchstens 15 % unsicher.
 - **Restrisiko:** seltene Kürzel, die im ausgewerteten Bereich nur einmal vorkommen und nicht gelesen werden. Dagegen helfen die strengen Schwellen und Muster aus der ganzen Tabelle.
 
+## Erstes Testergebnis auf dem Smartphone (18.10.2026)
+
+Getestet mit frischen Handyfotos eines Ausdrucks von Variante 5, Person „Wernicke, Hanna“, bei eher schlechtem Licht.
+
+- **Erkennung:** hat eher nicht gut funktioniert. Die Ursache ist noch nicht im Einzelnen untersucht (Licht, Blocksuche oder Erkennung). Die Fotos fehlen noch als Testdaten.
+- **Bereichsauswahl:** Trotz Lupe ist es am Handy sehr schwierig, die eigene Zeile genau auszuwählen. Das wirkt sich vermutlich direkt auf das Ergebnis aus, denn ein ungenauer Block verschiebt Spalten oder Unterzeilen.
+- **Grundsätzliche Einschätzung (Nutzer):** Die Erkennung auf dem Gerät ohne KI funktioniert vermutlich nur, wenn für das jeweilige Planformat (hier: fünf Unterzeilen je Person) passende Aufbauten vorbereitet und optimiert sind. Nutzer aus anderen Einrichtungen mit anderen Plänen würden damit voraussichtlich nie gute Ergebnisse bekommen. Offen ist daher, ob sich weitere Optimierung der lokalen Erkennung lohnt.
+- **Einordnung (Entwicklung):** Die Einschätzung deckt sich mit den Erfahrungen der letzten Schritte.
+  - Jede Verbesserung musste auf konkrete Planmerkmale abgestimmt werden: Unterzeilen, Trennlinien, Namensspalte, Farben und Tageszahlen. Mit den bisherigen Bildern ist die Erkennung im Test zwar sicher („lieber unsicher als falsch“), aber auf echten Fotos oft wenig vollständig.
+  - Die schwierigsten Schritte sind die Blocksuche und die genaue Ausrichtung des Rasters, nicht das Lesen der Kürzel.
+  - Eine KI-gestützte Erkennung, laut [ADR 0001](../adr/0001-texterkennung-lokal-vor-cloud.md) bisher nur als Rückfall vorgesehen, könnte Planaufbau, eigene Zeile und Kürzel ohne formatspezifische Regeln erfassen. Sie hätte aber Folgen für Datenschutz (Bild verlässt das Gerät), Kosten und Offline-Fähigkeit.
+- **Nächste Entscheidung:** Lokale Erkennung weiter optimieren, so lassen wie sie ist (nur für vorbereitete Formate), oder den KI-Weg vorziehen. Gehört gegebenenfalls in ein neues ADR, das ADR 0001 ergänzt.
+
 ## Einschränkungen in V1
 
 - Uhrzeiten aus dem Plan werden nicht gelesen. Es gelten die Zeiten der Vorlage.
@@ -148,7 +161,9 @@ Simulation mit `tesseract.js` 7 in Node, Skripte und beste Einstellung in [`scri
 
 ## Offene Punkte
 
-- Keine fachlichen Punkte offen. `////` und `D03` sind geklärt (außerhalb des Umfangs, siehe oben). Das Erfolgskriterium ist festgelegt und in der Simulation erfüllt.
+- **Weiteres Vorgehen bei der Erkennung** nach dem ersten Smartphone-Test (siehe oben): lokale Erkennung weiter optimieren, auf vorbereitete Formate beschränken oder KI-gestützte Erkennung vorziehen.
+- **Bereichsauswahl am Handy** ist zu schwierig. Ideen: eine Zeile antippen statt vier Ecken ziehen, Ecken nur grob setzen und automatisch an die Gitterlinien einrasten, oder größere Griffe mit einem Versatz unter dem Finger.
+- `////` und `D03` sind geklärt (außerhalb des Umfangs, siehe oben).
 
 ## Ideen
 

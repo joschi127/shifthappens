@@ -3,6 +3,7 @@
 Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
 ## [Unreleased]
+- **PRD Dienstplan-Import:** Erstes Testergebnis auf dem Smartphone festgehalten. Die Erkennung war bei frischen Fotos eher schwach, die Bereichsauswahl am Handy schwierig. Offen ist die Grundsatzfrage, ob die lokale Erkennung weiter optimiert oder ein KI-Weg vorgezogen wird.
 - **Einstellungen, alle Daten löschen:** Neuer Bereich „Zurücksetzen“ mit „Alle Daten und Einstellungen löschen“. Entfernt Schichten, Vorlagen, Einstellungen und die Google-Verbindung von diesem Gerät, nach zweistufiger Bestätigung und mit dem Angebot, vorher ein Backup zu exportieren.
   - **Google Drive:** Ist Drive verbunden, fragt die App ausdrücklich, ob auch die Sicherung im Drive gelöscht werden soll (standardmäßig nicht). Schlägt das Löschen im Drive fehl, wird auf dem Gerät nichts gelöscht.
   - **Ohne Verbindung:** Der Dialog erklärt, dass eine frühere Drive-Sicherung bestehen bleibt und wie man sie entfernt.
