@@ -2,7 +2,7 @@
  * Erkennung der Zellen eines entzerrten Rasters (Verfahren aus scripts/poc-local-recognition, ADR 0001).
  * Grundsatz: lieber unsicher als falsch. Unsichere Zellen bekommen, wenn möglich, einen Vorschlag.
  */
-import { Grid, cellRect } from './geometry';
+import { Grid, cellRect, cellUnreliable } from './geometry';
 import { CellImage, Patch, composeStrip, otsu1d, patchOf, prepareCell, similarity } from './cellImage';
 import { OcrEngine } from './ocr';
 import { charactersFor, isFreeCode, normalizeReading, snapToKnown } from './codeReading';
@@ -28,6 +28,7 @@ export interface CellResult {
 }
 
 export interface PersonResult {
+  unreliableShare?: number;   // Anteil der Tage, deren Raster nicht eindeutig war (z. B. stark gewölbtes Blatt)
   duty: CellResult[];
   absence?: CellResult[];
   standby?: { labelled: boolean; raw: string }[];
@@ -47,7 +48,7 @@ export interface RecognitionOptions {
 }
 
 interface WorkCell {
-  person: number; day: number;
+  person: number; day: number; unreliable: boolean;
   got: string; cellGot: string; stripGot: string; altGot: string | null;
   contrast: number; patch: Patch; snapped: string;
   value: string; uncertain: boolean; suggestion?: string; lowInk?: boolean;
@@ -70,7 +71,8 @@ export async function recognizeGrid(grid: Grid, layout: GridLayout, vocabulary: 
   const results: PersonResult[] = [];
 
   for (let p = 0; p < layout.persons; p++) {
-    const result: PersonResult = { duty: [] };
+    const unreliable = Array.from({ length: grid.cols }, (_, d) => cellUnreliable(grid, d, rowIndex(p, layout.dutyRow))).filter(Boolean).length;
+    const result: PersonResult = { duty: [], unreliableShare: unreliable / grid.cols };
     // Streifen-Erkennung der Dienstzeile
     const dutyImages = Array.from({ length: grid.cols }, (_, d) => prepareCell(grid.image, cellRect(grid, d, rowIndex(p, layout.dutyRow))));
     const strip = composeStrip(dutyImages.map(c => c.image));
@@ -90,7 +92,7 @@ export async function recognizeGrid(grid: Grid, layout: GridLayout, vocabulary: 
       if (cell.partialFill) altGot = await readCell(prepareCell(grid.image, rect, { rowBackground: true }));
       const rt = normalizeReading(stripTexts[d]);
       const stripGot = rt !== '' && rt.length <= maxLen ? rt : '';
-      dutyCells.push({ person: p, day: d, got: stripGot || cellGot, cellGot, stripGot, altGot, contrast: cell.contrast,
+      dutyCells.push({ person: p, day: d, unreliable: cellUnreliable(grid, d, rowIndex(p, layout.dutyRow)), got: stripGot || cellGot, cellGot, stripGot, altGot, contrast: cell.contrast,
         patch: patchOf(grid.image, rect), snapped: '', value: '', uncertain: false });
       tick();
 
@@ -98,7 +100,7 @@ export async function recognizeGrid(grid: Grid, layout: GridLayout, vocabulary: 
         const aRect = cellRect(grid, d, rowIndex(p, layout.absenceRow));
         const aCell = prepareCell(grid.image, aRect);
         const got = await readCell(aCell);
-        absenceCells.push({ person: p, day: d, got, cellGot: got, stripGot: '', altGot: null, contrast: aCell.contrast,
+        absenceCells.push({ person: p, day: d, unreliable: cellUnreliable(grid, d, rowIndex(p, layout.absenceRow)), got, cellGot: got, stripGot: '', altGot: null, contrast: aCell.contrast,
           patch: patchOf(grid.image, aRect), snapped: '', value: '', uncertain: false });
         tick();
       }
@@ -117,6 +119,13 @@ export async function recognizeGrid(grid: Grid, layout: GridLayout, vocabulary: 
   const used = (c: WorkCell) => !ignored.has(c.person);
   resolveDuty(dutyCells.filter(used), known, templateMin, templateMargin);
   if (layout.absenceRow !== undefined) resolveAbsence(absenceCells.filter(used), vocabulary.absence, templateMin, templateMargin);
+
+  // Zellen mit mehrdeutigen Zeilengrenzen: nichts sicher übernehmen, Lesung bleibt als Vorschlag
+  for (const c of [...dutyCells, ...absenceCells]) {
+    if (!c.unreliable || c.uncertain) continue;
+    c.uncertain = true;
+    c.suggestion = c.value;
+  }
 
   for (const c of dutyCells) results[c.person].duty[c.day] = toResult(c);
   for (const c of absenceCells) (results[c.person].absence ??= [])[c.day] = toResult(c);
@@ -162,7 +171,9 @@ function resolveDuty(cells: WorkCell[], known: string[], minScore: number, margi
     const conflict = (c.stripGot !== '' && cellSnap !== snapToKnown(c.stripGot, known)
         && (cellSnap === '-' || known.includes(cellSnap) || (cellSnap === '' && c.contrast <= thr)))
       || (c.altGot !== null && snapToKnown(c.altGot, known) !== c.snapped);
-    if (!conflict) {
+    // Kürzel in einer Zelle fast ohne Tinte: Lesung gehört vermutlich zur Nachbarzelle (Streifen-Erkennung)
+    const inkless = known.includes(c.snapped) && surelyEmpty(c);
+    if (!conflict && !inkless) {
       if (known.includes(c.snapped)) { c.value = c.snapped; continue; }
       if ((c.snapped === '-' && c.contrast <= dashContrast * 1.6) || (c.snapped === '' && surelyEmpty(c))) { c.value = '-'; continue; }
     }
@@ -180,14 +191,29 @@ function resolveDuty(cells: WorkCell[], known: string[], minScore: number, margi
     if (list.length < 8) list.push(c.patch);
     examples.set(c.value, list);
   }
+  // Verwechslungsgefahr (z. B. N06/N08): sieht eine sicher gelesene Zelle einem Kürzel, das sich nur in einem
+  // Zeichen unterscheidet, klar ähnlicher als den übrigen Zellen mit ihrem eigenen Kürzel, wird sie unsicher
+  const confusable = new Set<WorkCell>();
   for (const c of cells) {
-    if (!c.uncertain) continue;
+    if (c.uncertain || !known.includes(c.value)) continue;
+    const own = Math.max(-1, ...(examples.get(c.value) ?? []).filter(p => p !== c.patch).map(p => similarity(c.patch, p)));
+    for (const sibling of known.filter(k => differsInOneCharacter(k, c.value))) {
+      const other = Math.max(-1, ...(examples.get(sibling) ?? []).map(p => similarity(c.patch, p)));
+      if (other >= 0.7 && other > own + 0.1) { c.uncertain = true; c.suggestion = sibling; confusable.add(c); break; }
+    }
+  }
+
+  for (const c of cells) {
+    if (!c.uncertain || confusable.has(c)) continue;
     const [b1, b2] = bestTemplate(c.patch, examples);
     if (!b1) continue;
     c.suggestion = b1.code;
     if (b1.score >= minScore && (!b2 || b1.score - b2.score >= margin)) { c.value = b1.code; c.uncertain = false; }
   }
 }
+
+const differsInOneCharacter = (a: string, b: string) =>
+  a.length === b.length && a !== b && [...a].filter((ch, i) => ch !== b[i]).length === 1;
 
 /**
  * Ein gültiges, aber deutlich kürzeres Kürzel als die übrigen sicher gelesenen Kürzel des Plans

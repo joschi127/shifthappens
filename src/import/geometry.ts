@@ -114,7 +114,12 @@ export interface Grid {
   rows: number;
   colBounds: number[];            // cols + 1 Grenzen
   rowBoundsByCol: number[][];     // je Spalte rows + 1 Grenzen (gewölbtes Papier)
+  disputedLines?: boolean[][];    // je Spalte rows + 1: Zeilengrenze nicht eindeutig (stark gewölbtes Blatt)
 }
+
+/** Zelle, deren obere oder untere Grenze nicht eindeutig gefunden wurde: nichts sicher daraus übernehmen */
+export const cellUnreliable = (grid: Grid, col: number, row: number): boolean =>
+  !!grid.disputedLines && (grid.disputedLines[col][row] || grid.disputedLines[col][row + 1]);
 
 export type Rect = [number, number, number, number]; // x, y, Breite, Höhe
 
@@ -132,19 +137,44 @@ export function buildGrid(image: Raster, cols: number, rows: number): Grid {
   const vProfile = lineProfile(image, true);
   const colBounds = Array.from({ length: cols + 1 }, (_, i) =>
     i === 0 || i === cols ? Math.round(i * cw) : strongestNear(vProfile, Math.round(i * cw), Math.round(cw * 0.35)));
-  const hProfile = lineProfile(image, false);
-  const rowBounds = Array.from({ length: rows + 1 }, (_, i) =>
-    i === 0 || i === rows ? Math.round(i * rh) : strongestNear(hProfile, Math.round(i * rh), Math.round(rh * 0.35)));
 
-  const rowBoundsByCol: number[][] = [];
-  let previous = rowBounds;
-  const radius = Math.round(rh * 0.3);
-  for (let d = 0; d < cols; d++) {
-    const profile = lineProfile(image, false, colBounds[Math.max(0, d - 1)], colBounds[Math.min(cols, d + 2)]);
-    const bounds = previous.map(e => strongestNear(profile, e, radius));
+  // Zeilengrenzen je Spalte nachführen (gewölbtes Papier), einmal vom linken und einmal vom rechten Rand aus.
+  // An den Rändern sitzen die Ecken genau, dort stimmt das Raster. Alle Linien einer Spalte werden zuerst
+  // gemeinsam verschoben, dann jede nur leicht nachjustiert, damit keine einzelne Linie auf die Nachbarlinie springt.
+  // Kommen beide Durchläufe bei einer Linie zu anderen Ergebnissen, ist sie mehrdeutig (z. B. stark gewölbtes
+  // Blatt): Zellen an dieser Linie werden unsicher (cellUnreliable).
+  const profiles = new Map<number, Float32Array>();
+  const profileOf = (d: number) => {
+    if (!profiles.has(d)) profiles.set(d, lineProfile(image, false, colBounds[Math.max(0, d - 1)], colBounds[Math.min(cols, d + 2)]));
+    return profiles.get(d)!;
+  };
+  const uniform = Array.from({ length: rows + 1 }, (_, i) => Math.round(i * rh));
+  const snap = (d: number, previous: number[], jointRadius: number, lineRadius: number) => {
+    const profile = profileOf(d);
+    const at = (y: number) => profile[Math.min(profile.length - 1, Math.max(0, y))];
+    let shift = 0, best = -Infinity;
+    for (let o = -jointRadius; o <= jointRadius; o++) {
+      const score = previous.reduce((s, e) => s + at(e + o), 0);
+      if (score > best || (score === best && Math.abs(o) < Math.abs(shift))) { best = score; shift = o; }
+    }
+    const bounds = previous.map(e => strongestNear(profile, e + shift, lineRadius));
     for (let i = 1; i < bounds.length; i++) if (bounds[i] <= bounds[i - 1] + 4) bounds[i] = bounds[i - 1] + 4; // Reihenfolge absichern
-    rowBoundsByCol.push(bounds);
-    previous = bounds;
-  }
-  return { image, cols, rows, colBounds, rowBoundsByCol };
+    return bounds;
+  };
+  const pass = (from: number, step: number) => {
+    const result: number[][] = Array(cols);
+    // Randspalte: gleichmäßiges Raster auf die Linien einrasten (Unterzeilen dürfen unterschiedlich hoch sein)
+    let previous = snap(from, uniform, 0, Math.round(rh * 0.35));
+    for (let d = from; d >= 0 && d < cols; d += step) {
+      previous = d === from ? previous : snap(d, previous, Math.round(rh * 0.5), Math.round(rh * 0.15));
+      result[d] = previous;
+    }
+    return result;
+  };
+  const fromLeft = pass(0, 1), fromRight = pass(cols - 1, -1);
+  const tolerance = rh * 0.3;
+  // Ober- und Unterkante liegen am Bildrand und sind durch die Ecken festgelegt; verglichen werden die Linien dazwischen
+  const disputedLines = fromLeft.map((bounds, d) => bounds.map((y, i) => i > 0 && i < rows && Math.abs(y - fromRight[d][i]) > tolerance));
+  const rowBoundsByCol = fromLeft;
+  return { image, cols, rows, colBounds, rowBoundsByCol, disputedLines };
 }

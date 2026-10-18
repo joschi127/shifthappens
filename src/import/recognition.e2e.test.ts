@@ -11,52 +11,16 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { PNG } from 'pngjs';
-import jpeg from 'jpeg-js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { buildGrid, Quad, quadSlice, warpQuad } from './geometry';
+import { buildGrid, quadSlice, warpQuad } from './geometry';
 import { OcrEngine } from './ocr';
-import { Raster, rotate90 } from './raster';
 import { PersonResult, recognizeGrid } from './recognizeGrid';
 import { recognizeOwnBlock } from './recognizeOwnBlock';
-import { createTesseractEngine } from './tesseractEngine';
 import { isFreeCode } from './codeReading';
+import { collectExamples, createTestEngine, decode, loadExpected, root, rotateBy } from '../testing/recognitionExamples';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const BASELINE_FILE = path.join(root, 'src/import/recognition.baseline.json');
 const OUT_OF_SCOPE = new Set(['////', 'D03']); // Sonderfälle einzelner Kollegen (PRD Dienstplan-Import)
-
-interface Example { dir: string; expectedFile: string; image: string; corners: Quad; rotate: boolean; isLocal: boolean }
-
-function loadExpected(file: string): any {
-  const data = JSON.parse(fs.readFileSync(file, 'utf-8'));
-  return data.basis ? { ...loadExpected(path.join(path.dirname(file), `${data.basis}.erwartet.json`)), ...data } : data;
-}
-
-function collectExamples(): Example[] {
-  const dirs = [['docs/beispiele/dienstplaene', false], ['local/dienstplaene', true]] as const;
-  const examples: Example[] = [];
-  for (const [rel, isLocal] of dirs) {
-    const dir = path.join(root, rel);
-    if (!fs.existsSync(dir)) continue;
-    for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.erwartet.json')).sort()) {
-      const data = loadExpected(path.join(dir, f));
-      for (const image of data.dateien ?? []) {
-        const setup = data.auswertung?.[image];
-        if (setup) examples.push({ dir, expectedFile: path.join(dir, f), image, corners: setup.ecken, rotate: setup.drehung === 90, isLocal });
-      }
-    }
-  }
-  return examples;
-}
-
-function decode(file: string): Raster {
-  const buf = fs.readFileSync(file);
-  if (file.endsWith('.png')) { const p = PNG.sync.read(buf); return { width: p.width, height: p.height, data: p.data }; }
-  const j = jpeg.decode(buf, { useTArray: true });
-  return { width: j.width, height: j.height, data: j.data };
-}
 
 // Sicher falsche Zellen einer Person (Dienst- und Abwesenheitszeile)
 function sureWrongOf(row: any, result: PersonResult): string[] {
@@ -76,19 +40,13 @@ function sureWrongOf(row: any, result: PersonResult): string[] {
 const corrections = (data: any, image: string) =>
   (data.handschrift ?? []).filter((h: any) => h.art === 'korrektur' && (!h.dateien || h.dateien.includes(image)));
 
-const encodePng = (img: Raster) => { const p = new PNG({ width: img.width, height: img.height }); p.data = Buffer.from(img.data); return PNG.sync.write(p); };
-
 const examples = collectExamples();
 const baseline: Record<string, { duty: number; absence: number }> = fs.existsSync(BASELINE_FILE) ? JSON.parse(fs.readFileSync(BASELINE_FILE, 'utf-8')) : {};
 const measured: Record<string, { duty: number; absence: number }> = {};
 let engine: OcrEngine;
 
 beforeAll(async () => {
-  engine = await createTesseractEngine({
-    encode: encodePng,
-    langPath: path.join(root, 'node_modules/@tesseract.js-data/eng/4.0.0_best_int'),
-    cacheMethod: 'none'
-  });
+  engine = await createTestEngine();
 });
 
 afterAll(async () => {
@@ -104,7 +62,7 @@ describe.each(examples.map(e => [e.isLocal ? `local/${e.image}` : e.image, e] as
     const subRows = data.unterzeilen ? Object.keys(data.unterzeilen).length : 1;
     const persons = data.zeilen.length, days = data.tage;
     let img = decode(path.join(example.dir, example.image));
-    if (example.rotate) img = rotate90(img, 'cw');
+    img = rotateBy(img, example.rotate);
     const grid = buildGrid(warpQuad(img, example.corners, days * 64, persons * subRows * 34), days, persons * subRows);
 
     const dutyCodes = [...new Set<string>(data.zeilen.flatMap((z: any) => z.codes))].filter(c => !isFreeCode(c));
@@ -150,7 +108,7 @@ describe.each(examples.map(e => [e.isLocal ? `local/${e.image}` : e.image, e] as
     const subRows = data.unterzeilen ? Object.keys(data.unterzeilen).length : 1;
     const persons = data.zeilen.length, days = data.tage;
     let img = decode(path.join(example.dir, example.image));
-    if (example.rotate) img = rotate90(img, 'cw');
+    img = rotateBy(img, example.rotate);
     const dutyCodes = [...new Set<string>(data.zeilen.flatMap((z: any) => z.codes))].filter(c => !isFreeCode(c));
     const absenceCodes = [...new Set<string>(data.zeilen.flatMap((z: any) => z.sonder ?? []))].filter(Boolean);
     const layout = subRows > 1 ? { subRows, dutyRow: 0, absenceRow: 1, standbyRow: 2 } : { subRows: 1, dutyRow: 0 };

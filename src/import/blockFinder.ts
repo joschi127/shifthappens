@@ -4,8 +4,8 @@
  * Das Ergebnis ist ein Vorschlag; der Nutzer bestätigt oder korrigiert die Ecken.
  */
 import { Quad } from './geometry';
-import { OcrWord } from './ocr';
-import { Raster, luminanceAt } from './raster';
+import { OcrEngine, OcrWord } from './ocr';
+import { Raster, cropScaled, luminanceAt, rotate180, rotate90 } from './raster';
 
 export interface BlockFinderOptions {
   rosterNames: string[];
@@ -136,4 +136,44 @@ export function findBlock(img: Raster, words: OcrWord[], options: BlockFinderOpt
     corners: [[leftV(yLeftTop), yLeftTop], [xr, topH(xr)], [rightV(bottomRight), bottomRight], [leftV(bottom), bottom]],
     partialName: name.partial
   };
+}
+
+/**
+ * Block mit Texterkennung suchen. Findet die Erkennung auf dem ganzen Bild den Namen nicht (kleine Schrift
+ * direkt neben Gitterlinien, z. B. bei Scans im Dokumentenmodus), wird die Namensspalte links der Tagesspalten
+ * vergrößert ein zweites Mal gelesen.
+ */
+export async function locateBlock(img: Raster, engine: OcrEngine, options: BlockFinderOptions): Promise<BlockMatch | null> {
+  const { words } = await engine.recognize(img, { mode: 'sparse' });
+  const match = findBlock(img, words, options);
+  if (match) return match;
+  const cols = fitDayColumns(words);
+  if (!cols) return null;
+  const cw = (cols.colX(options.days) - cols.colX(1)) / (options.days - 1);
+  const right = Math.round(Math.min(cols.colX(1), cols.colX(options.days)) - cw * 0.5);
+  const top = Math.max(0, Math.round(Math.min(cols.colY(1), cols.colY(options.days))));
+  if (right < 20 || top >= img.height - 20) return null;
+  const scale = 2;
+  const strip = cropScaled(img, 0, top, right, img.height - top, scale);
+  const stripWords = (await engine.recognize(strip, { mode: 'sparse' })).words.map(w => ({
+    text: w.text, x0: w.x0 / scale, x1: w.x1 / scale, y0: w.y0 / scale + top, y1: w.y1 / scale + top
+  }));
+  return findBlock(img, [...words, ...stripWords], options);
+}
+
+/**
+ * Eigenen Block suchen, bei Bedarf im gedrehten Bild: zuerst wie fotografiert, dann um 90° in beide
+ * Richtungen (Querformat-Pläne werden oft im Hochformat fotografiert), zuletzt auf dem Kopf.
+ * Liefert das (ggf. gedrehte) Bild mit dem Treffer.
+ */
+export async function locateOwnBlock(img: Raster, engine: OcrEngine, options: BlockFinderOptions,
+                                     onRotate?: () => void): Promise<{ image: Raster; match: BlockMatch } | null> {
+  const candidates: (() => Raster)[] = [() => img, () => rotate90(img, 'cw'), () => rotate90(img, 'ccw'), () => rotate180(img)];
+  for (const [index, candidate] of candidates.entries()) {
+    if (index > 0) onRotate?.();
+    const image = candidate();
+    const match = await locateBlock(image, engine, options);
+    if (match) return { image, match };
+  }
+  return null;
 }

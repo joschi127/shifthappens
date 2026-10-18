@@ -20,6 +20,12 @@ Generierte Dummy-Dienstpläne **ohne echte Namen** in einem gängigen Format. Si
 | `variante-5-sauber.png` | **Variante 5:** Variante 3 mit den Eigenheiten eines echten Plans: Unterzeilen unterschiedlich hoch, Schrift bis an die Gitterlinie, Teilfüllung (`M01`), leere Zelle, `RB`/`RB2` |
 | `variante-5-foto.jpg` | Variante 5 als **synthetisches** Foto: gewölbtes Papier, Perspektive, Licht, Klebestreifen, zweites Blatt, Unschärfe, um 90° gedreht |
 | `variante-5.erwartet.json` | Erwartete Werte für Variante 5 (vollständig) und die Änderungen gegenüber Variante 3 (`aenderungen`) |
+| `variante-5-foto-querformat.jpg` | **Echtes Foto** eines Ausdrucks von Variante 5 im Querformat: leicht schräg von oben, Schatten (2000 × 1125 px) |
+| `variante-5-foto-kopfueber.jpg` | Echtes Foto, um 180° gedreht (Blatt auf dem Kopf), deutlich perspektivisch verzerrt |
+| `variante-5-dokumentmodus-farbe.jpg` | Dokumentenmodus der Android-Kamera, Farbe (zugeschnitten und entzerrt) |
+| `variante-5-dokumentmodus-sw.jpg` | Dokumentenmodus mit Schwarz-Weiß-Filter: keine Farben, harte Kontraste |
+| `variante-5-foto-hochformat.jpg` | Echtes Foto im Hochformat (Plan um 90° gedreht), Blatt stark gewölbt: Zeilen und Spalten sind gebogen |
+| `variante-5-fotos.erwartet.json` | Ecken und Drehung der fünf echten Fotos; Werte über `basis` aus Variante 5 |
 | `erzeugung/variante-5.py` | Skript, das Variante 5 aus Variante 3 erzeugt, inkl. erwarteter Werte und Ecken (Pillow, NumPy, fester Zufalls-Seed) |
 
 Geladen werden die erwarteten Werte in Tests über `loadReferenceRoster('variante-1')` aus `src/testing/referenceRosters.ts`.
@@ -104,6 +110,6 @@ Erfundene Namen und Werte aus Variante 3, aber mit genau den Merkmalen, an denen
 
 1. Bild bzw. Bilder nach dem Schema oben ablegen. Nur generierte oder vollständig anonymisierte Pläne verwenden und Metadaten entfernen.
 2. `variante-<n>.erwartet.json` im selben Format anlegen. Unterscheidet sich eine Variante nur in der Abbildung eines bestehenden Plans, verweist sie über `basis` auf dessen Werte.
-3. Die Ecken des Tagesrasters je Bild unter `auswertung` eintragen (bei gedrehten Fotos `"drehung": 90`), damit `scripts/poc-local-recognition/evaluate.mjs` das Bild mit auswertet.
+3. Die Ecken des Tagesrasters je Bild unter `auswertung` eintragen (bei gedrehten Fotos `"drehung"` in Grad im Uhrzeigersinn: 90, 180 oder 270; die Ecken gelten für das gedrehte Bild), damit `scripts/poc-local-recognition/evaluate.mjs` das Bild mit auswertet.
 4. Die Variante in `src/testing/referenceRosters.test.ts` in die Liste bei `describe.each` aufnehmen.
 5. KI-generierte Bilder sind möglich, aber Bildgeneratoren verändern in Tabellen gern einzelne Zeichen. Die erwarteten Werte daher immer am erzeugten Bild prüfen, nicht an der Vorlage.

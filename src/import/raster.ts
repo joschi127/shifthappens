@@ -30,3 +30,17 @@ export function rotate90(img: Raster, direction: 'cw' | 'ccw'): Raster {
   }
   return { width: h, height: w, data: out };
 }
+
+// Um 180° drehen (Blatt auf dem Kopf fotografiert)
+export const rotate180 = (img: Raster): Raster => rotate90(rotate90(img, 'cw'), 'cw');
+
+// Ausschnitt [x0, y0, Breite, Höhe] um einen ganzzahligen Faktor vergrößert (kleine Schrift für die Texterkennung)
+export function cropScaled(img: Raster, x0: number, y0: number, w: number, h: number, scale: number): Raster {
+  const out = createRaster(w * scale, h * scale);
+  for (let y = 0; y < h * scale; y++) for (let x = 0; x < w * scale; x++) {
+    const sx = Math.min(img.width - 1, x0 + Math.floor(x / scale)), sy = Math.min(img.height - 1, y0 + Math.floor(y / scale));
+    const s = (sy * img.width + sx) * 4, d = (y * w * scale + x) * 4;
+    out.data[d] = img.data[s]; out.data[d + 1] = img.data[s + 1]; out.data[d + 2] = img.data[s + 2];
+  }
+  return out;
+}

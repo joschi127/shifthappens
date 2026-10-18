@@ -1,0 +1,18 @@
+{
+  "beschreibung": "Echte Fotos eines Ausdrucks von variante-5-sauber.png (Smartphone). Werte wie Variante 5. Ecken von Hand bestimmt (Koordinaten nach der Drehung).",
+  "basis": "variante-5",
+  "dateien": [
+    "variante-5-foto-querformat.jpg",
+    "variante-5-foto-kopfueber.jpg",
+    "variante-5-dokumentmodus-farbe.jpg",
+    "variante-5-dokumentmodus-sw.jpg",
+    "variante-5-foto-hochformat.jpg"
+  ],
+  "auswertung": {
+    "variante-5-foto-querformat.jpg": {"ecken": [[260, 242], [1493, 229], [1522.5, 1016], [221, 1019]]},
+    "variante-5-foto-kopfueber.jpg": {"ecken": [[339, 228.5], [1520.5, 251], [1553.5, 966], [336.5, 1017.5]], "drehung": 180},
+    "variante-5-dokumentmodus-farbe.jpg": {"ecken": [[273, 405], [1486, 398], [1488, 1141.5], [274.5, 1150.5]]},
+    "variante-5-dokumentmodus-sw.jpg": {"ecken": [[272.5, 407], [1485, 402], [1487, 1151], [274.5, 1154.5]]},
+    "variante-5-foto-hochformat.jpg": {"ecken": [[263, 188], [1449, 228], [1470, 996], [223.5, 935]], "drehung": 270, "gewoelbt": true}
+  }
+}

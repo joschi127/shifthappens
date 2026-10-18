@@ -111,6 +111,10 @@
           Bitte prüfen. Gelb markierte Tage sind unsicher erkannt: antippen und bestätigen oder korrigieren.
           Unbestätigte werden mit „?!“ gespeichert.
         </p>
+        <ion-note v-if="warpedPaper" class="hint warning">
+          Das Blatt scheint stark gewölbt oder geknickt, deshalb konnten viele Tage nicht sicher gelesen werden.
+          Tipp: Blatt glatt auf den Tisch legen und von oben fotografieren (oder den Dokumentenmodus der Kamera nutzen), dann erneut importieren.
+        </ion-note>
         <ion-list>
           <ion-item v-for="(day, index) in proposals" :key="day.date" :class="{ 'uncertain-row': dayIsUncertain(day) }" lines="full">
             <div slot="start" class="date-cell">
@@ -217,7 +221,7 @@ import { Quad } from '../import/geometry';
 import { Raster, rotate90 } from '../import/raster';
 import { ImageInputError, loadImageFile } from '../import/imageInput';
 import { getBrowserEngine, releaseBrowserEngine } from '../import/browserEngine';
-import { findBlock } from '../import/blockFinder';
+import { BlockMatch, locateBlock, locateOwnBlock } from '../import/blockFinder';
 import { recognizeOwnBlock } from '../import/recognizeOwnBlock';
 import { DayProposal, DayReading, ProposalItem, ignoreCodeIn, rematchUnknown, resolveShifts } from '../import/resolveShifts';
 import { ImportPlan, PlannedShift, planImport } from '../import/importPlan';
@@ -326,8 +330,7 @@ const rotate = async (direction: 'cw' | 'ccw') => {
   await findOwnBlock(false);
 };
 
-// Sucht den eigenen Block; findet sie nichts, werden (beim ersten Versuch) beide Drehungen um 90° probiert,
-// denn Querformat-Pläne werden oft im Hochformat fotografiert
+// Sucht den eigenen Block; beim ersten Versuch auch im gedrehten Bild (90° in beide Richtungen, 180°)
 const findOwnBlock = async (tryRotations = true) => {
   if (!image.value) return;
   if (!rosterNames.value.length) {
@@ -339,16 +342,13 @@ const findOwnBlock = async (tryRotations = true) => {
   busy.value = true; busyText.value = 'Deine Zeile wird gesucht (beim ersten Mal werden die Erkennungsdaten geladen) …'; progress.value = null;
   try {
     const engine = await getBrowserEngine();
-    const search = async (img: Raster) => {
-      const { words } = await engine.recognize(img, { mode: 'sparse' });
-      return findBlock(img, words, { rosterNames: rosterNames.value, days: daysInMonth.value, blockRatio: format.value.blockRatio ?? 2.9 });
-    };
-    let match = await search(image.value);
-    for (const direction of tryRotations && !match ? (['cw', 'ccw'] as const) : []) {
-      busyText.value = 'Deine Zeile wird im gedrehten Bild gesucht …';
-      const rotated = rotate90(image.value, direction);
-      match = await search(rotated);
-      if (match) { image.value = rotated; break; }
+    const options = { rosterNames: rosterNames.value, days: daysInMonth.value, blockRatio: format.value.blockRatio ?? 2.9 };
+    let match: BlockMatch | null = null;
+    if (tryRotations) {
+      const found = await locateOwnBlock(image.value, engine, options, () => { busyText.value = 'Deine Zeile wird im gedrehten Bild gesucht …'; });
+      if (found) { image.value = found.image; match = found.match; }
+    } else {
+      match = await locateBlock(image.value, engine, options);
     }
     if (match) {
       corners.value = match.corners;
@@ -374,6 +374,8 @@ const reset = () => { image.value = null; step.value = 'source'; proposals.value
 const proposals = ref<DayProposal[]>([]);
 const plan = ref<ImportPlan | null>(null);
 const applyRemovals = ref(true);
+// Raster in vielen Spalten nicht eindeutig (stark gewölbtes Blatt): Hinweis auf ein neues Foto
+const warpedPaper = ref(false);
 
 // Seitenverhältnis des bestätigten Blocks für die nächste automatische Suche merken
 const learnBlockRatio = async () => {
@@ -407,6 +409,7 @@ const runRecognition = async () => {
     const person = await recognizeOwnBlock(image.value, corners.value, daysInMonth.value,
       { subRows: f.subRows ?? 1, dutyRow: f.dutyRow ?? 0, absenceRow: f.absenceRow, standbyRow: f.standbyRow },
       vocabulary(), engine, { onProgress: (done, total) => { progress.value = done / total; } });
+    warpedPaper.value = (person.unreliableShare ?? 0) >= 0.2;
     const days: DayReading[] = person.duty.map((duty, d) => ({ duty, absence: person.absence?.[d], standby: person.standby?.[d] }));
     proposals.value = resolveShifts(days, { templates: templates.value, ignoreCodes: ignoreCodes.value, year: year.value, month: month.value });
     await refreshPlan();

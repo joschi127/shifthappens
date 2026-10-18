@@ -26,6 +26,7 @@ for (const dir of dirs) for (const file of fs.readdirSync(dir).filter(f => f.end
   const data = JSON.parse(fs.readFileSync(expectedPath, 'utf-8'));
   for (const image of data.dateien || []) {
     const setup = data.auswertung?.[image]; if (!setup) continue;
+    if (setup.drehung && setup.drehung !== 90) continue; // die Simulation kennt nur 90°, alle Drehungen prüft npm run test:recognition
     const out = path.join(outRoot, image.replace(/\W+/g, '_'));
     const args = [path.join(here, 'recognize.mjs'), path.join(dir, image), JSON.stringify(setup.ecken), out];
     if (setup.drehung === 90) args.push('rotate90');
