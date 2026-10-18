@@ -3,6 +3,7 @@
 Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
 ## [Unreleased]
+- **Dienstplan-Import, unbekannte Kürzel:** Der Zuordnen-Dialog bietet zusätzlich „Neue Vorlage mit Kürzel …“ (öffnet eine neue Vorlage mit vorbelegtem Kürzel; nach dem Speichern werden alle Tage mit diesem Kürzel automatisch zugeordnet), „Überspringen“ (diesmal nicht übernehmen, ohne Nachfrage beim Speichern) und „Kürzel … immer ignorieren“ (landet in der Ignorier-Liste der Einstellungen und entfällt an allen Tagen des Imports).
 - **Dienstplan-Import, Erklärung zu Schicht-Vorlagen:** Aufklappbarer Hinweis „Warum brauche ich Schicht-Vorlagen?“ in der Import-Ansicht. Er erklärt in persönlicher Ansprache, warum Vorlagen mit Kürzeln vorab angelegt sein sollten, und ist automatisch aufgeklappt, solange noch keine Vorlage ein Kürzel hat.
 - **Dienstplan-Import, Hinweise:** Fehlt der „Name im Dienstplan“ oder gibt es keine Vorlage mit Schichtkürzel, führen die Hinweise direkt zu den Einstellungen bzw. Schicht-Vorlagen; die Warnung erscheint jetzt auch, wenn Vorlagen ohne Kürzel existieren. Änderungen dort werden beim Zurückkehren übernommen.
 - **Dienstplan-Import, Erkennung mit Nachbarblöcken:** Die Blöcke direkt über und unter dem eigenen werden als zusätzliche Vergleichsmuster mit ausgewertet, übernommen wird weiterhin nur die eigene Zeile. Kopfzeilen und Legenden werden dabei erkannt und ignoriert. Der Regressionstest prüft diesen Modus zusätzlich.

@@ -4,7 +4,7 @@
  * Abwesenheiten aus der Abwesenheitszeile; "Kürzel ohne Eintrag" erzeugen nichts.
  */
 import { ShiftType } from '../db';
-import { isStandbyWildcard, matchesStandby, parseShiftCode } from '../utils/shiftCodes';
+import { isStandbyWildcard, matchesStandby, parseShiftCode, sameShiftCode } from '../utils/shiftCodes';
 import { sameEntry } from '../utils/tagList';
 import { CellResult } from './recognizeGrid';
 import { isFreeCode } from './codeReading';
@@ -15,13 +15,13 @@ export interface DayReading {
   standby?: { labelled: boolean; raw: string };
 }
 
-export type ProposalStatus = 'ok' | 'uncertain' | 'unknown';
+export type ProposalStatus = 'ok' | 'uncertain' | 'unknown' | 'skipped';
 
 export interface ProposalItem {
   kind: 'duty' | 'absence';
   code: string;              // gelesenes bzw. vorgeschlagenes Kürzel (bei Kombinationen "N01 + F02")
   shiftTypeId?: number;      // zugeordnete Vorlage, falls gefunden
-  status: ProposalStatus;    // ok = sicher; uncertain = bitte bestätigen; unknown = kein passendes Kürzel
+  status: ProposalStatus;    // ok = sicher; uncertain = bitte bestätigen; unknown = kein passendes Kürzel; skipped = diesmal nicht übernehmen
   review?: string;           // Grund für "zu prüfen" beim Speichern ohne Bestätigung
   spansNextDay?: boolean;    // Kombination: Folgetag gehört zu dieser Schicht
 }
@@ -122,4 +122,34 @@ function itemFor(kind: 'duty' | 'absence', code: string, uncertain: boolean,
     return { kind, code, shiftTypeId: prefix.id, status: 'uncertain', review: `Unvollständiges Kürzel „${code}“ – bitte prüfen` };
   }
   return { kind, code, status: 'unknown' };
+}
+
+/**
+ * Kürzel ab sofort ignorieren: nicht bestätigte Einträge mit diesem Kürzel aus allen Tagen entfernen,
+ * wie es resolveShifts für Kürzel aus der Ignorier-Liste tut. Liefert die Anzahl entfernter Einträge.
+ */
+export function ignoreCodeIn(proposals: DayProposal[], code: string): number {
+  let removed = 0;
+  for (const day of proposals) {
+    const kept = day.items.filter(i => i.status === 'ok' || !sameEntry(i.code, code));
+    removed += day.items.length - kept.length;
+    day.items = kept;
+  }
+  return removed;
+}
+
+/**
+ * Unbekannte Kürzel nachträglich zuordnen, z. B. nachdem eine Vorlage mit diesem Kürzel angelegt wurde.
+ * Liefert die Anzahl neu zugeordneter Einträge.
+ */
+export function rematchUnknown(proposals: DayProposal[], templates: ShiftType[]): number {
+  let matched = 0;
+  for (const item of proposals.flatMap(d => d.items)) {
+    if (item.status !== 'unknown') continue;
+    const type = templates.find(t => (t.codes ?? []).some(c => sameShiftCode(c, item.code)));
+    if (!type) continue;
+    Object.assign(item, { shiftTypeId: type.id, status: 'ok', kind: type.kind === 'absence' ? 'absence' : 'duty', review: undefined });
+    matched++;
+  }
+  return matched;
 }

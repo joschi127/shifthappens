@@ -128,7 +128,7 @@
                 :style="chipStyle(item)"
                 @click="openAssign(index, itemIndex)"
               >
-                <span v-if="item.status !== 'ok'" class="flag">?!</span>
+                <span v-if="item.status !== 'ok' && item.status !== 'skipped'" class="flag">?!</span>
                 {{ chipLabel(item) }}
               </button>
               <button v-if="!day.items.length && !day.consumedByPrevious" type="button" class="chip free" :class="{ uncertain: day.uncertainEmpty }" @click="openAssign(index, -1)">
@@ -164,10 +164,22 @@
       <ion-modal :is-open="assign !== null" :initial-breakpoint="0.75" :breakpoints="[0, 0.75, 1]" @didDismiss="assign = null">
         <ion-content class="ion-padding">
           <h3>{{ assignTitle }}</h3>
-          <p v-if="assignItem && assignItem.status === 'unknown'" class="muted">
-            Das Kürzel „{{ assignItem.code }}“ ist keiner Vorlage zugeordnet.
+          <p v-if="assignItem && isUnassigned(assignItem)" class="muted">
+            Das Kürzel „{{ assignItem.code }}“ ist keiner Vorlage zugeordnet. Wähle unten eine Vorlage oder:
           </p>
-          <ion-item v-if="assignItem && assignItem.status === 'unknown' && !isCombo(assignItem.code)" lines="none">
+          <div v-if="assignItem && isUnassigned(assignItem)" class="unknown-actions">
+            <ion-button expand="block" fill="outline" size="small" @click="createTemplateFor(assignItem.code)">
+              <ion-icon slot="start" :icon="addOutline"></ion-icon>
+              Neue Vorlage mit Kürzel „{{ assignItem.code }}“
+            </ion-button>
+            <ion-button v-if="assignItem.status !== 'skipped'" expand="block" fill="outline" size="small" color="medium" @click="skipItem">
+              Überspringen (diesmal nicht übernehmen)
+            </ion-button>
+            <ion-button v-if="!isCombo(assignItem.code)" expand="block" fill="clear" size="small" color="medium" @click="ignoreAlways(assignItem.code)">
+              Kürzel „{{ assignItem.code }}“ immer ignorieren
+            </ion-button>
+          </div>
+          <ion-item v-if="assignItem && isUnassigned(assignItem) && !isCombo(assignItem.code)" lines="none">
             <ion-checkbox v-model="rememberCode" label-placement="end">Kürzel „{{ assignItem.code }}“ an der gewählten Vorlage merken</ion-checkbox>
           </ion-item>
           <ion-list>
@@ -194,12 +206,12 @@ import {
   IonList, IonItem, IonLabel, IonNote, IonSelect, IonSelectOption, IonProgressBar, IonModal, IonCheckbox,
   toastController, alertController, onIonViewWillEnter
 } from '@ionic/vue';
-import { cameraOutline, chevronDownOutline, chevronUpOutline, imageOutline, informationCircleOutline, refreshOutline } from 'ionicons/icons';
+import { addOutline, cameraOutline, chevronDownOutline, chevronUpOutline, imageOutline, informationCircleOutline, refreshOutline } from 'ionicons/icons';
 import { computed, onUnmounted, ref, shallowRef } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { db, ImportTemplate, ShiftType } from '../db';
 import RegionSelector from '../components/import/RegionSelector.vue';
-import { getImportProfile, getImportTemplates, saveImportTemplates } from '../services/importSettingsService';
+import { getImportProfile, getImportTemplates, saveImportProfile, saveImportTemplates } from '../services/importSettingsService';
 import { markLocalModified } from '../services/googleDriveService';
 import { Quad } from '../import/geometry';
 import { Raster, rotate90 } from '../import/raster';
@@ -207,10 +219,11 @@ import { ImageInputError, loadImageFile } from '../import/imageInput';
 import { getBrowserEngine, releaseBrowserEngine } from '../import/browserEngine';
 import { findBlock } from '../import/blockFinder';
 import { recognizeOwnBlock } from '../import/recognizeOwnBlock';
-import { DayProposal, DayReading, ProposalItem, resolveShifts } from '../import/resolveShifts';
+import { DayProposal, DayReading, ProposalItem, ignoreCodeIn, rematchUnknown, resolveShifts } from '../import/resolveShifts';
 import { ImportPlan, PlannedShift, planImport } from '../import/importPlan';
 import { IMPORT_FORMATS, learnedBlockRatio, mergeFormats } from '../import/formats';
-import { parseShiftCode, sameShiftCode } from '../utils/shiftCodes';
+import { normalizeShiftCode, parseShiftCode, sameShiftCode } from '../utils/shiftCodes';
+import { sameEntry } from '../utils/tagList';
 
 const route = useRoute();
 const router = useRouter();
@@ -264,6 +277,8 @@ onIonViewWillEnter(async () => {
   const lastUsed = saved.find(s => s.lastUsed);
   if (lastUsed && !formatChosen) formatId.value = lastUsed.id;
   if (!templates.value.some(t => t.codes?.length)) explainTemplates.value = true;
+  // Zurück vom Anlegen einer Vorlage: unbekannte Kürzel, die jetzt passen, zuordnen
+  if (step.value === 'confirm' && rematchUnknown(proposals.value, templates.value)) await refreshPlan();
   formatChosen = true;
 });
 
@@ -419,12 +434,15 @@ const refreshPlan = async () => {
 const WEEKDAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 const weekdayOf = (date: string) => WEEKDAYS[new Date(`${date}T12:00:00`).getDay()];
 const templateOf = (id?: number) => templates.value.find(t => t.id === id);
-const chipLabel = (item: ProposalItem) => templateOf(item.shiftTypeId)?.name ?? `„${item.code}“ zuordnen`;
+const chipLabel = (item: ProposalItem) =>
+  item.status === 'skipped' ? `„${item.code}“ übersprungen` : templateOf(item.shiftTypeId)?.name ?? `„${item.code}“ zuordnen`;
 const chipStyle = (item: ProposalItem) => {
   const color = templateOf(item.shiftTypeId)?.color;
   return color ? { borderColor: color, backgroundColor: item.kind === 'absence' ? 'transparent' : `${color}22` } : {};
 };
-const dayIsUncertain = (day: DayProposal) => day.uncertainEmpty || day.items.some(i => i.status !== 'ok');
+const dayIsUncertain = (day: DayProposal) => day.uncertainEmpty || day.items.some(i => i.status === 'uncertain' || i.status === 'unknown');
+// Kürzel ohne Vorlage: unbekannt oder bewusst übersprungen
+const isUnassigned = (item: ProposalItem) => item.status === 'unknown' || item.status === 'skipped';
 const conflictsOf = (date: string): PlannedShift[] => plan.value?.planned.filter(p => p.shift.date === date && p.manualConflicts.length) ?? [];
 const manuallyChangedOf = (date: string): PlannedShift[] => plan.value?.planned.filter(p => p.shift.date === date && p.manuallyChanged) ?? [];
 const isCombo = (code: string) => parseShiftCode(code)?.type === 'combo';
@@ -458,6 +476,32 @@ const choose = async (shiftTypeId: number | null) => {
   }
   assign.value = null;
   await refreshPlan();
+};
+
+// Diesmal nicht übernehmen (ohne Nachfrage beim Speichern); erneutes Antippen erlaubt doch eine Zuordnung
+const skipItem = async () => {
+  if (assignItem.value) assignItem.value.status = 'skipped';
+  assign.value = null;
+  await refreshPlan();
+};
+
+// Dauerhaft ignorieren: in die Ignorier-Liste der Einstellungen und an allen Tagen dieses Imports entfernen
+const ignoreAlways = async (code: string) => {
+  const profile = await getImportProfile();
+  if (!profile.ignoreCodes.some(c => sameEntry(c, code))) {
+    await saveImportProfile({ ...profile, ignoreCodes: [...profile.ignoreCodes, normalizeShiftCode(code)] });
+  }
+  ignoreCodes.value = (await getImportProfile()).ignoreCodes;
+  const removed = ignoreCodeIn(proposals.value, code);
+  assign.value = null;
+  await refreshPlan();
+  await toast(`„${code}“ wird ab jetzt ignoriert (${removed === 1 ? '1 Tag' : `${removed} Tage`} in diesem Plan). Rückgängig in Einstellungen → Dienstplan-Import.`);
+};
+
+// Neue Vorlage mit dem Kürzel anlegen; beim Zurückkehren werden passende Kürzel automatisch zugeordnet
+const createTemplateFor = async (code: string) => {
+  assign.value = null;
+  await router.push({ path: '/shift-types/new', query: { code } });
 };
 
 // "Kürzel merken": an der gewählten Vorlage speichern, sofern es nirgends sonst vergeben ist
@@ -631,6 +675,16 @@ const save = async () => {
 .chip.unknown {
   border-color: var(--ion-color-danger) !important;
   color: var(--ion-color-danger);
+}
+
+.chip.skipped {
+  border-style: dashed;
+  color: var(--ion-color-step-500, #808080);
+  text-decoration: line-through;
+}
+
+.unknown-actions {
+  margin: 8px 0 12px;
 }
 
 .chip.free {

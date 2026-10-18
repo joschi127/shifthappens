@@ -300,6 +300,10 @@ watch(() => form.value.hasNightStandby, (newValue) => {
 });
 
 const loadShiftType = async () => {
+  // Aus dem Dienstplan-Import: neue Vorlage mit dem dort gelesenen Kürzel vorbelegen
+  if (!isEdit.value && typeof route.query.code === 'string' && route.query.code.trim()) {
+    form.value.codes = [normalizeShiftCode(route.query.code)];
+  }
   if (isEdit.value) {
     const id = parseInt(route.params.id as string);
     const data = await db.shiftTypes.get(id);

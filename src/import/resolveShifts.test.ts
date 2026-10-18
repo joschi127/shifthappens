@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ShiftType } from '../db';
-import { DayReading, resolveShifts } from './resolveShifts';
+import { DayReading, ignoreCodeIn, rematchUnknown, resolveShifts } from './resolveShifts';
 import { planImport } from './importPlan';
 
 const base = { color: '#000', isSplitShift: false, hasNightStandby: false, startTime: '07:00', endTime: '15:30' };
@@ -97,5 +97,31 @@ describe('planImport', () => {
     expect(first.manuallyChanged).toBe(true);
     expect(plan.planned[1]).toMatchObject({ include: false, manualConflicts: [expect.objectContaining({ id: 12 })] });
     expect(plan.removals.map(s => s.id)).toEqual([11]);
+  });
+});
+
+describe('Umgang mit unbekannten Kürzeln', () => {
+  const read = () => resolveShifts([day(sure('Q7')), day(sure('F01')), day(sure('Q7')), day(sure('S04'))], opts);
+
+  it('übersprungene Einträge werden nicht übernommen', () => {
+    const r = read();
+    r[0].items[0].status = 'skipped';
+    const plan = planImport(r, templates, [], 'import-1');
+    expect(plan.planned.map(p => p.shift.date)).toEqual(['2026-11-02', '2026-11-04']);
+  });
+
+  it('„immer ignorieren“ entfernt das Kürzel an allen Tagen, bestätigte Einträge bleiben', () => {
+    const r = read();
+    expect(r[0].items[0].status).toBe('unknown');
+    expect(ignoreCodeIn(r, 'q7')).toBe(2);
+    expect(r.map(d => d.items.length)).toEqual([0, 1, 0, 1]);
+  });
+
+  it('ordnet unbekannte Kürzel nach dem Anlegen einer passenden Vorlage zu', () => {
+    const r = read();
+    const withNew = [...templates, { ...base, id: 9, order: 9, name: 'Teamtag', codes: ['Q7'] }];
+    expect(rematchUnknown(r, withNew)).toBe(2);
+    expect(r[2].items[0]).toMatchObject({ shiftTypeId: 9, status: 'ok', kind: 'duty' });
+    expect(rematchUnknown(r, withNew)).toBe(0);
   });
 });
