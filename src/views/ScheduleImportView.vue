@@ -113,7 +113,7 @@
         </p>
         <ion-note v-if="warpedPaper" class="hint warning">
           Das Blatt scheint stark gewölbt oder geknickt, deshalb konnten viele Tage nicht sicher gelesen werden.
-          Tipp: Blatt glatt auf den Tisch legen und von oben fotografieren (oder den Dokumentenmodus der Kamera nutzen), dann erneut importieren.
+          Für ein besseres Ergebnis: Blatt glatt hinlegen, gerade von oben fotografieren oder den Dokumentenmodus der Kamera nutzen.
         </ion-note>
         <ion-list>
           <ion-item v-for="(day, index) in proposals" :key="day.date" :class="{ 'uncertain-row': dayIsUncertain(day) }" lines="full">
@@ -342,7 +342,8 @@ const findOwnBlock = async (tryRotations = true) => {
   busy.value = true; busyText.value = 'Deine Zeile wird gesucht (beim ersten Mal werden die Erkennungsdaten geladen) …'; progress.value = null;
   try {
     const engine = await getBrowserEngine();
-    const options = { rosterNames: rosterNames.value, days: daysInMonth.value, blockRatio: format.value.blockRatio ?? 2.9 };
+    const options = { rosterNames: rosterNames.value, days: daysInMonth.value, blockRatio: format.value.blockRatio ?? 2.9,
+      subRows: format.value.subRows ?? 1, dutyCodes: vocabulary().dutyOnly };
     let match: BlockMatch | null = null;
     if (tryRotations) {
       const found = await locateOwnBlock(image.value, engine, options, () => { busyText.value = 'Deine Zeile wird im gedrehten Bild gesucht …'; });
@@ -388,14 +389,15 @@ const learnBlockRatio = async () => {
 
 // Alle einzelnen Kürzel aus den Vorlagen (auch Teile von Kombinationen) als bekannter Wortschatz
 const vocabulary = () => {
-  const duty = new Set<string>(ignoreCodes.value), absence = new Set<string>();
+  const duty = new Set<string>(ignoreCodes.value), absence = new Set<string>(), dutyOnly = new Set<string>();
   for (const t of templates.value) for (const c of t.codes ?? []) {
     const p = parseShiftCode(c);
     if (!p) continue;
     const parts = p.type === 'single' ? [p.code] : [p.first, p.second];
-    for (const part of parts) { duty.add(part); if (t.kind === 'absence') absence.add(part); }
+    for (const part of parts) { duty.add(part); (t.kind === 'absence' ? absence : dutyOnly).add(part); }
   }
-  return { duty: [...duty], absence: [...absence] };
+  // dutyOnly: nur Dienstkürzel, für die Nachprüfung der Blocksuche (Abwesenheiten zählen dort nicht)
+  return { duty: [...duty], absence: [...absence], dutyOnly: [...dutyOnly] };
 };
 
 const runRecognition = async () => {
@@ -410,6 +412,8 @@ const runRecognition = async () => {
       { subRows: f.subRows ?? 1, dutyRow: f.dutyRow ?? 0, absenceRow: f.absenceRow, standbyRow: f.standbyRow },
       vocabulary(), engine, { onProgress: (done, total) => { progress.value = done / total; } });
     warpedPaper.value = (person.unreliableShare ?? 0) >= 0.2;
+    // Lieber ein neues Foto als eine schlechte Erkennung: bei stark gewölbtem Blatt zuerst darum bitten
+    if (warpedPaper.value && !(await askForBetterPhoto())) { reset(); return; }
     const days: DayReading[] = person.duty.map((duty, d) => ({ duty, absence: person.absence?.[d], standby: person.standby?.[d] }));
     proposals.value = resolveShifts(days, { templates: templates.value, ignoreCodes: ignoreCodes.value, year: year.value, month: month.value });
     await refreshPlan();
@@ -420,6 +424,22 @@ const runRecognition = async () => {
   } finally {
     busy.value = false;
   }
+};
+
+// Liefert true, wenn der Nutzer trotzdem mit diesem Bild weitermachen möchte
+const askForBetterPhoto = async (): Promise<boolean> => {
+  busy.value = false;
+  const alert = await alertController.create({
+    header: 'Bitte ein besseres Foto',
+    message: 'Das Blatt scheint stark gewölbt oder geknickt. Viele Tage lassen sich so nicht sicher lesen. '
+      + 'Lege das Blatt glatt auf den Tisch und fotografiere es gerade von oben, oder nutze den Dokumentenmodus deiner Kamera.',
+    buttons: [
+      { text: 'Trotzdem prüfen', role: 'cancel' },
+      { text: 'Neues Foto', role: 'confirm' }
+    ]
+  });
+  await alert.present();
+  return (await alert.onDidDismiss()).role !== 'confirm';
 };
 
 const refreshPlan = async () => {

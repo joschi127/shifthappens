@@ -49,7 +49,7 @@ export function quadSlice(corners: Quad, from: number, to: number): Quad {
   return [applyHomography(h, [0, from]), applyHomography(h, [1, from]), applyHomography(h, [1, to]), applyHomography(h, [0, to])];
 }
 
-const insideImage = (img: { width: number; height: number }, quad: Quad) =>
+export const insideImage = (img: { width: number; height: number }, quad: Quad) =>
   quad.every(([x, y]) => x >= 0 && y >= 0 && x <= img.width - 1 && y <= img.height - 1);
 
 /** Wie viele gleich hohe Blöcke über und unter dem Viereck (je höchstens max) noch im Bild liegen */

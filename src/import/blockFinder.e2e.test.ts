@@ -16,6 +16,7 @@ import { OcrEngine, OcrRequest } from './ocr';
 import { Raster } from './raster';
 import { locateOwnBlock } from './blockFinder';
 import { IMPORT_FORMATS } from './formats';
+import { isFreeCode } from './codeReading';
 import { collectExamples, createTestEngine, decode, loadExpected, root, rotateBy } from '../testing/recognitionExamples';
 
 const BASELINE_FILE = path.join(root, 'src/import/blockFinder.baseline.json');
@@ -55,15 +56,23 @@ describe.each(examples.map(e => [e.isLocal ? `local/${e.image}` : e.image, e] as
     const subRows = data.unterzeilen ? Object.keys(data.unterzeilen).length : 1;
     const format = IMPORT_FORMATS.find(f => (f.subRows ?? 1) === subRows)!;
     const persons = data.zeilen.length, days = data.tage;
+    const dutyCodes = [...new Set<string>(data.zeilen.flatMap((z: any) => z.codes))].filter(c => !isFreeCode(c));
     const photo = decode(path.join(example.dir, example.image));
     const upright = rotateBy(photo, example.rotate);
 
     const misses: string[] = [];
     let hits = 0;
-    for (const p of [...new Set([0, persons >> 1, persons - 1])]) {
+    // Private Pläne enthalten nur Platzhalternamen: dort die eigene Zeile aus local/dienstplaene/profil.json
+    // (Feld "profilZeile" in den erwarteten Werten = Index der Person)
+    const profileFile = path.join(example.dir, 'profil.json');
+    const ownRow: number | undefined = data.profilZeile;
+    const people = example.isLocal
+      ? (ownRow !== undefined && fs.existsSync(profileFile) ? [{ p: ownRow, names: JSON.parse(fs.readFileSync(profileFile, 'utf-8')).rosterNames as string[] }] : [])
+      : [...new Set([0, persons >> 1, persons - 1])].map(p => ({ p, names: [data.zeilen[p].name ?? data.zeilen[p].kuerzel] }));
+    for (const { p, names } of people) {
       const row = data.zeilen[p];
       const label = example.isLocal ? `Person ${p + 1}` : row.name ?? row.kuerzel;
-      const found = await locateOwnBlock(photo, cachingEngine, { rosterNames: [row.name ?? row.kuerzel], days, blockRatio: format.blockRatio! });
+      const found = await locateOwnBlock(photo, cachingEngine, { rosterNames: names, days, blockRatio: format.blockRatio!, subRows, dutyCodes });
       if (!found) { misses.push(`${label}: nicht gefunden`); continue; }
       if (found.image.width !== upright.width || found.image.height !== upright.height) { misses.push(`${label}: falsche Drehung`); continue; }
       if (!example.curved) {

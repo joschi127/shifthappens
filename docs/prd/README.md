@@ -7,3 +7,4 @@
 | [Datensicherung und Synchronisation](datensicherung-und-sync.md) | umgesetzt, `.ics`-Abo geplant (nachträglich dokumentiert) |
 | [Dienstplan-Import per Foto/PDF](dienstplan-import.md) | Schritte 1–6 umgesetzt (ohne PDF), weitere offen |
 | [Kalender teilen (ICS-Abo)](kalender-teilen.md) | geplant, PoC ausstehend |
+| [Abwesenheiten zuverlässiger erkennen](abwesenheiten-erkennen.md) | Entwurf, unvollständig |

@@ -3,14 +3,17 @@
  * Name per Texterkennung, Tagesspalten per Ausgleichsgerade durch die Tageszahlen, Grenzen per Gitterlinien.
  * Das Ergebnis ist ein Vorschlag; der Nutzer bestätigt oder korrigiert die Ecken.
  */
-import { Quad } from './geometry';
+import { Quad, insideImage, quadSlice, warpQuad } from './geometry';
+import { charactersFor, isFreeCode, normalizeReading } from './codeReading';
 import { OcrEngine, OcrWord } from './ocr';
-import { Raster, cropScaled, luminanceAt, rotate180, rotate90 } from './raster';
+import { Raster, binarize, cropScaled, luminanceAt, removeGridLines, rotate180, rotate90, rowsOf } from './raster';
 
 export interface BlockFinderOptions {
   rosterNames: string[];
   days: number;           // Anzahl Tage im Monat
   blockRatio: number;     // Blockhöhe ÷ Spaltenbreite des Planformats (Import-Vorlage)
+  subRows?: number;       // Unterzeilen je Person, die erste ist die Dienstzeile (für die Nachprüfung)
+  dutyCodes?: string[];   // bekannte Dienstkürzel ohne Abwesenheiten (für die Nachprüfung)
 }
 
 export interface BlockMatch {
@@ -59,6 +62,23 @@ export function findName(words: OcrWord[], rosterNames: string[]): (Box & { part
   return null;
 }
 
+/** Ausgleich x = (a·t + b) / (c·t + 1) nach kleinsten Quadraten (linearisiert: a·t + b − c·t·x = x) */
+function projectiveFit(points: [number, number][]): ((t: number) => number) | null {
+  const A = [[0, 0, 0], [0, 0, 0], [0, 0, 0]], r = [0, 0, 0];
+  for (const [t, x] of points) {
+    const row = [t, 1, -t * x];
+    for (let i = 0; i < 3; i++) { r[i] += row[i] * x; for (let j = 0; j < 3; j++) A[i][j] += row[i] * row[j]; }
+  }
+  const det = (m: number[][]) => m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+  const D = det(A);
+  if (Math.abs(D) < 1e-9) return null;
+  const [a, b, c] = [0, 1, 2].map(k => det(A.map((row, i) => row.map((v, j) => (j === k ? r[i] : v)))) / D);
+  const f = (t: number) => (a * t + b) / (c * t + 1);
+  // Nur übernehmen, wenn der Nenner über den Monat positiv bleibt und die Spalten monoton wachsen
+  for (let t = 1; t <= 31; t++) if (c * t + 1 <= 0.2 || f(t + 1) <= f(t)) return null;
+  return f;
+}
+
 // Spalten aus den erkannten Tageszahlen: robuste Ausgleichsgerade (x und y linear in der Tagesnummer)
 export function fitDayColumns(words: OcrWord[]): { colX: (day: number) => number; colY: (day: number) => number } | null {
   const days = words.filter(w => /^(0?[1-9]|[12][0-9]|3[01])$/.test(w.text))
@@ -77,8 +97,18 @@ export function fitDayColumns(words: OcrWord[]): { colX: (day: number) => number
     const k = best.reduce((s, p) => s + (p.day - mt) * (p[key] - mv), 0) / best.reduce((s, p) => s + (p.day - mt) ** 2, 0);
     return (t: number) => mv + k * (t - mt);
   };
-  return { colX: fit('x'), colY: fit('y') };
+  // Bei schräg fotografierten Plänen werden die Spalten zum fernen Rand hin schmaler: dann perspektivisch
+  // passend (x = (a·t + b) / (c·t + 1)), sofern genug Tageszahlen über den Monat verteilt erkannt wurden
+  const spread = Math.max(...best.map(p => p.day)) - Math.min(...best.map(p => p.day));
+  const colX = best.length >= 6 && spread >= 10 ? projectiveFit(best.map(p => [p.day, p.x])) ?? fit('x') : fit('x');
+  return { colX, colY: fit('y') };
 }
+
+// Unter den deutlichen Linien (mindestens halb so stark wie die stärkste) die dem erwarteten Ort nächste
+const nearestStrong = (peaks: { y: number; s: number }[], expected: number): number | undefined => {
+  const strongest = Math.max(0, ...peaks.map(p => p.s));
+  return peaks.filter(p => p.s >= strongest * 0.5).sort((a, b) => Math.abs(a.y - expected) - Math.abs(b.y - expected))[0]?.y;
+};
 
 export function findBlock(img: Raster, words: OcrWord[], options: BlockFinderOptions): BlockMatch | null {
   const name = findName(words, options.rosterNames);
@@ -105,8 +135,20 @@ export function findBlock(img: Raster, words: OcrWord[], options: BlockFinderOpt
   };
 
   // Senkrechte Ränder: linker Rand von Tag 1, rechter Rand des letzten Tages, ab der Kopfzeile nach unten verfolgt
-  const leftHead = bestIn(xx => lineV(xx, colY(1) + 10), colX(1) - cw * 0.75, colX(1) - cw * 0.25);
-  const rightHead = bestIn(xx => lineV(xx, colY(last) + 10), colX(last) + cw * 0.25, colX(last) + cw * 0.75);
+  // Örtliche Spaltenbreite an den Rändern (bei Perspektive ist der ferne Rand schmaler als der Durchschnitt)
+  const cwLeft = colX(2) - colX(1), cwRight = colX(last) - colX(last - 1);
+  // Senkrechte Linie über eine größere Höhe messen (einzelne Ziffern daneben stören sonst)
+  const lineVTall = (x: number, y: number) => { let s = 0; for (let k = 0; k < 6; k++) s += lineV(x, y + 10 + k * 7); return s; };
+  // Unter den deutlichen Linien die der erwarteten Lage (halbe Spaltenbreite neben der Tageszahl) nächste;
+  // links liegt oft die schmale Spalte mit den Unterzeilen-Buchstaben, rechts die Summenspalten
+  const edgeNear = (y: number, expected: number, radius: number) => {
+    const profile: { y: number; s: number }[] = [];
+    for (let x = Math.round(expected - radius) - 3; x <= Math.round(expected + radius) + 3; x++) profile.push({ y: x, s: lineVTall(x, y) });
+    const peaksV = profile.filter((p, i) => i >= 3 && i < profile.length - 3 && profile.slice(i - 3, i + 4).every(q => q.s <= p.s));
+    return nearestStrong(peaksV, expected) ?? bestIn(xx => lineVTall(xx, y), expected - radius, expected + radius);
+  };
+  const leftHead = edgeNear(colY(1), colX(1) - cwLeft * 0.5, cwLeft * 0.35);
+  const rightHead = edgeNear(colY(last), colX(last) + cwRight * 0.5, cwRight * 0.4);
   const leftV = traceV(colY(1) + 10, leftHead), rightV = traceV(colY(last) + 10, rightHead);
 
   // Waagerechte Gitterlinien: Median über 20 Spalten (Buchstaben treffen nur einzelne Spalten), Schräglage aus der Kopfzeile
@@ -119,18 +161,31 @@ export function findBlock(img: Raster, words: OcrWord[], options: BlockFinderOpt
   for (let y = Math.round(name.y0 - 40); y <= Math.round(name.y1 + 200); y++) profile.push({ y, s: strength(y) });
   const maxS = Math.max(...profile.map(p => p.s));
   const peaks = profile.filter((p, i) => p.s > maxS * 0.08 && profile.slice(Math.max(0, i - 4), i + 5).every(q => q.s <= p.s));
-  const topCandidate = peaks.filter(p => p.y <= name.y0 + 4 && p.y >= name.y0 - cw).sort((a, b) => b.s - a.s)[0] ?? peaks[0];
+  // Oberkante: bei Unterzeilen die stärkste Linie über dem Namen (Trennlinie zwischen Personen; nur Vorname
+  // erkannt korrigiert refineBlock), bei einer Zeile je Person die nächstgelegene deutliche Linie (die stärkste
+  // läge dort oft eine Zeile zu hoch)
+  // (bis zu einem guten Drittel der Namenshöhe, die Schrift berührt die Linie manchmal fast). „Deutlich“ heißt
+  // mindestens 60 % der stärksten Linie, sonst zählen waagerechte Buchstabenstriche der Dienstzeile mit.
+  const above = peaks.filter(p => p.y <= name.y0 + Math.max(4, (name.y1 - name.y0) * 0.35) && p.y >= name.y0 - cw);
+  const strongest = Math.max(0, ...above.map(p => p.s));
+  const topCandidate = ((options.subRows ?? 1) > 1
+    ? [...above].sort((a, b) => b.s - a.s)[0]
+    : above.filter(p => p.s >= strongest * 0.6).sort((a, b) => b.y - a.y)[0]) ?? peaks[0];
   if (!topCandidate) return null;
   const top = topCandidate.y;
   const expectedBottom = top + options.blockRatio * cw;
-  const bottom = peaks.filter(p => Math.abs(p.y - expectedBottom) <= cw * 0.3).sort((a, b) => b.s - a.s)[0]?.y ?? Math.round(expectedBottom);
+  const bottom = nearestStrong(peaks.filter(p => Math.abs(p.y - expectedBottom) <= cw * 0.3), expectedBottom) ?? Math.round(expectedBottom);
   const topH = traceH(leftV(top), rightV(top), top);
 
   // Unterkante rechts nahe "rechte Oberkante + Blockhöhe" suchen (Median über die letzten 10 Spalten)
   const xr = rightV(topH(rightV(top)));
   const strengthRight = (y: number) => { const v: number[] = []; for (let k = 0; k < 10; k++) v.push(lineH(xr - cw * (k + 0.5), y - slope * k)); return v.sort((a, b) => a - b)[5]; };
-  const expectedBR = topH(xr) + (bottom - top);
-  const bottomRight = bestIn(strengthRight, expectedBR - cw * 0.3, expectedBR + cw * 0.3);
+  // Perspektive: am schmaleren Rand ist der Block im selben Verhältnis niedriger
+  const expectedBR = topH(xr) + (bottom - top) * Math.min(1.3, Math.max(0.7, cwRight / cwLeft));
+  const rightProfile: { y: number; s: number }[] = [];
+  for (let y = Math.round(expectedBR - cw * 0.3) - 4; y <= Math.round(expectedBR + cw * 0.3) + 4; y++) rightProfile.push({ y, s: strengthRight(y) });
+  const rightPeaks = rightProfile.filter((p, i) => i >= 4 && i < rightProfile.length - 4 && rightProfile.slice(i - 4, i + 5).every(q => q.s <= p.s));
+  const bottomRight = nearestStrong(rightPeaks, expectedBR) ?? bestIn(strengthRight, expectedBR - cw * 0.3, expectedBR + cw * 0.3);
   const yLeftTop = topH(leftV(top));
   return {
     corners: [[leftV(yLeftTop), yLeftTop], [xr, topH(xr)], [rightV(bottomRight), bottomRight], [leftV(bottom), bottom]],
@@ -140,25 +195,107 @@ export function findBlock(img: Raster, words: OcrWord[], options: BlockFinderOpt
 
 /**
  * Block mit Texterkennung suchen. Findet die Erkennung auf dem ganzen Bild den Namen nicht (kleine Schrift
- * direkt neben Gitterlinien, z. B. bei Scans im Dokumentenmodus), wird die Namensspalte links der Tagesspalten
- * vergrößert ein zweites Mal gelesen.
+ * direkt neben Gitterlinien, z. B. im Dokumentenmodus), wird die Namensspalte links der Tagesspalten
+ * Feld für Feld ein zweites Mal gelesen (readNameColumn).
  */
 export async function locateBlock(img: Raster, engine: OcrEngine, options: BlockFinderOptions): Promise<BlockMatch | null> {
+  const match = await locateBlockByName(img, engine, options);
+  return match && { ...match, corners: await refineBlock(img, match.corners, engine, options) };
+}
+
+async function locateBlockByName(img: Raster, engine: OcrEngine, options: BlockFinderOptions): Promise<BlockMatch | null> {
   const { words } = await engine.recognize(img, { mode: 'sparse' });
   const match = findBlock(img, words, options);
   if (match) return match;
   const cols = fitDayColumns(words);
   if (!cols) return null;
   const cw = (cols.colX(options.days) - cols.colX(1)) / (options.days - 1);
-  const right = Math.round(Math.min(cols.colX(1), cols.colX(options.days)) - cw * 0.5);
+  // Namensspalte ohne die schmale Spalte mit den Unterzeilen-Buchstaben (D/S/B/A/E)
+  const right = Math.round(Math.min(cols.colX(1), cols.colX(options.days)) - cw);
   const top = Math.max(0, Math.round(Math.min(cols.colY(1), cols.colY(options.days))));
   if (right < 20 || top >= img.height - 20) return null;
-  const scale = 2;
-  const strip = cropScaled(img, 0, top, right, img.height - top, scale);
-  const stripWords = (await engine.recognize(strip, { mode: 'sparse' })).words.map(w => ({
-    text: w.text, x0: w.x0 / scale, x1: w.x1 / scale, y0: w.y0 / scale + top, y1: w.y1 / scale + top
-  }));
+  const stripWords = await readNameColumn(img, engine, right, top, cw);
   return findBlock(img, [...words, ...stripWords], options);
+}
+
+/**
+ * Namensspalte (links von x = right, ab y = top) Feld für Feld lesen: dreifach vergrößert, Schwarz-Weiß,
+ * an den waagerechten Trennlinien in Felder zerlegt und ohne Gitterlinien. Kleine, saubere Ausschnitte
+ * liest die Texterkennung deutlich besser als die ganze Spalte mit allen Linien.
+ */
+async function readNameColumn(img: Raster, engine: OcrEngine, right: number, top: number, cw: number): Promise<OcrWord[]> {
+  const scale = 3;
+  const column = binarize(cropScaled(img, 0, top, right, img.height - top, scale));
+  const dark = (x: number, y: number) => column.data[(y * column.width + x) * 4] === 0;
+  // Trennlinien: Zeilen, die in der rechten Spaltenhälfte überwiegend dunkel sind (links liegt oft Papierrand)
+  const separators: number[] = [];
+  for (let y = 0; y < column.height; y++) {
+    let count = 0;
+    for (let x = Math.floor(column.width * 0.4); x < column.width; x++) if (dark(x, y)) count++;
+    if (count > column.width * 0.6 * 0.5 && (!separators.length || y - separators[separators.length - 1] > 6)) separators.push(y);
+  }
+  const words: OcrWord[] = [];
+  for (let i = 0; i + 1 < separators.length; i++) {
+    const y0 = separators[i] + 4, y1 = separators[i + 1] - 2;
+    if (y1 - y0 < 8 * scale) continue;
+    const field = removeGridLines(rowsOf(column, y0, y1), Math.max(24, Math.round(cw * scale * 0.8)));
+    for (const w of (await engine.recognize(field, { mode: 'sparse' })).words) {
+      words.push({ text: w.text, x0: w.x0 / scale, x1: w.x1 / scale, y0: (w.y0 + y0) / scale + top, y1: (w.y1 + y0) / scale + top });
+    }
+  }
+  return words;
+}
+
+/** Anzahl bekannter Kürzel in einem Zeilenstreifen (auch zusammengeklebt gelesene wie "F01F01") */
+async function codesInRow(img: Raster, row: Quad, days: number, engine: OcrEngine, codes: string[]): Promise<number> {
+  const strip = warpQuad(img, row, days * 48, 40);
+  // Dunkel hinterlegte Tage (helle Schrift auf farbigem Grund) umkehren, damit die Schrift dunkel auf hell steht
+  for (let d = 0; d < days; d++) {
+    let sum = 0;
+    for (let y = 0; y < 40; y++) for (let x = d * 48; x < (d + 1) * 48; x++) sum += luminanceAt(strip, x, y);
+    if (sum / (48 * 40) >= 110) continue;
+    for (let y = 0; y < 40; y++) for (let x = d * 48; x < (d + 1) * 48; x++) {
+      const o = (y * strip.width + x) * 4;
+      for (let c = 0; c < 3; c++) strip.data[o + c] = 255 - strip.data[o + c];
+    }
+  }
+  const text = (await engine.recognize(strip, { mode: 'sparse', characters: charactersFor(codes) })).words.map(w => normalizeReading(w.text)).join(' ');
+  const pattern = new RegExp([...codes].sort((a, b) => b.length - a.length).map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'g');
+  return (text.match(pattern) ?? []).length;
+}
+
+/**
+ * Inhaltliche Nachprüfung des gefundenen Blocks (nur bei mehreren Unterzeilen und bekannten Dienstkürzeln):
+ * - Lage: Die Dienstzeile muss Kürzel enthalten. Eine Unterzeile höher oder tiefer wird probiert und genommen,
+ *   wenn dort mehr bekannte Kürzel stehen (z. B. nur der Vorname in der zweiten Namenszeile erkannt).
+ * - Höhe: Die Dienstzeile des Blocks darunter muss ebenfalls Kürzel enthalten. Probiert wird die Höhe aus dem
+ *   Seitenverhältnis ±25 % (der Standardwert passt nicht zu jedem Plan, gelernt wird er erst beim Import).
+ * Abwesenheitskürzel zählen nicht mit, damit die Urlaubszeile nicht für die Dienstzeile gehalten wird.
+ */
+export async function refineBlock(img: Raster, corners: Quad, engine: OcrEngine, options: BlockFinderOptions): Promise<Quad> {
+  const subRows = options.subRows ?? 1;
+  const codes = (options.dutyCodes ?? []).filter(c => !isFreeCode(c));
+  if (subRows < 2 || !codes.length) return corners;
+  const count = (row: Quad) => insideImage(img, row) ? codesInRow(img, row, options.days, engine, codes) : Promise.resolve(-1);
+  const dutyRowOf = (block: Quad) => quadSlice(block, 0, 1 / subRows);
+
+  // Geändert wird nur bei deutlichem Befund: genug Kürzel (Fußzeilen oder Kopfzeilen liefern sonst Zufallstreffer)
+  const evidence = Math.max(3, Math.round(options.days * 0.15));
+  let block = corners, best = await count(dutyRowOf(corners));
+  for (const k of [-1, 1]) {
+    const shifted = quadSlice(corners, k / subRows, 1 + k / subRows);
+    const n = await count(dutyRowOf(shifted));
+    if (n >= evidence && n > best + 1) { block = shifted; best = n; }
+  }
+  if (best < evidence) return block;
+
+  let height = 1, bestBelow = await count(quadSlice(block, 1, 1 + 1 / subRows));
+  // Höhe in Schritten von 5 % zwischen −25 % und +25 % (die übliche Höhe zuerst, sie gewinnt bei Gleichstand)
+  for (const h of [0.95, 1.05, 0.9, 1.1, 0.85, 1.15, 0.8, 1.2, 0.75, 1.25]) {
+    const n = await count(quadSlice(block, h, h + h / subRows));
+    if (n >= evidence && n > bestBelow + 1) { height = h; bestBelow = n; }
+  }
+  return height === 1 ? block : quadSlice(block, 0, height);
 }
 
 /**

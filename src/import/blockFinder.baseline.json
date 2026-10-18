@@ -1,6 +1,6 @@
 {
-  "local/dienstplan-echt.jpeg": 0,
-  "variante-1-foto.jpg": 0,
+  "local/dienstplan-echt.jpeg": 1,
+  "variante-1-foto.jpg": 2,
   "variante-1-sauber.png": 3,
   "variante-2-foto.jpg": 0,
   "variante-2-sauber.png": 3,
@@ -8,11 +8,11 @@
   "variante-3-sauber.png": 3,
   "variante-4-foto.jpg": 3,
   "variante-4-sauber.png": 3,
-  "variante-5-dokumentmodus-farbe.jpg": 0,
-  "variante-5-dokumentmodus-sw.jpg": 0,
+  "variante-5-dokumentmodus-farbe.jpg": 2,
+  "variante-5-dokumentmodus-sw.jpg": 2,
   "variante-5-foto-hochformat.jpg": 2,
-  "variante-5-foto-kopfueber.jpg": 0,
-  "variante-5-foto-querformat.jpg": 2,
+  "variante-5-foto-kopfueber.jpg": 2,
+  "variante-5-foto-querformat.jpg": 3,
   "variante-5-foto.jpg": 3,
   "variante-5-sauber.png": 3
 }

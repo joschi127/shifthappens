@@ -3,6 +3,9 @@
 Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
 ## [Unreleased]
+- **Dienstplan-Import, besseres Foto anfordern:** Ist das Blatt so stark gewölbt, dass viele Tage nicht eindeutig zuzuordnen sind, bittet die App vor der Bestätigung um ein neues Foto („Neues Foto“ oder „Trotzdem prüfen“).
+- **Dienstplan-Import, genauere Blocksuche:** Namensspalte Feld für Feld lesen (Dokumentenmodus), Tagesspalten perspektivisch anpassen, Tabellenränder robuster finden, Lage und Höhe des Blocks anhand der Dienstkürzel nachprüfen. Im Regressionstest treffen jetzt 38 statt 31 von 46 Prüfungen.
+- **Roadmap und PRD-Entwurf:** „Abwesenheiten zuverlässiger erkennen“ als geplante Verbesserung aufgenommen.
 - **Dienstplan-Import, Schutzregeln:** Ein Kürzel in einer Zelle fast ohne Tinte wird nicht sicher übernommen. Kürzel, die sich nur in einem Zeichen unterscheiden (z. B. N06/N08), werden zusätzlich per Mustervergleich mit den übrigen Zellen des Plans geprüft. Anlass waren Fehler, die erst mit den neuen Testfotos auftraten.
 - **Dienstplan-Import, echte Testfotos:** Fünf Smartphone-Fotos eines Ausdrucks von Variante 5 als Testdaten (Querformat, auf dem Kopf, Dokumentenmodus in Farbe und Schwarz-Weiß, stark gewölbtes Blatt im Hochformat). Neuer Regressionstest der automatischen Blocksuche inkl. Drehung (`src/import/blockFinder.e2e.test.ts`).
 - **Dienstplan-Import, gewölbtes Papier:** Zeilenlinien werden vom linken und vom rechten Rand aus verfolgt und alle Linien einer Spalte gemeinsam verschoben. Sind sich beide Durchläufe bei einer Linie nicht einig, werden die angrenzenden Zellen unsicher statt falsch. Vorher wurden auf einem stark gewölbten Blatt Schichten als „frei“ erkannt. Bei vielen solchen Zellen rät die App, das Blatt glatt hinzulegen und neu zu fotografieren.
