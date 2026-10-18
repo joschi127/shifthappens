@@ -40,6 +40,12 @@ const routes: Array<RouteRecordRaw> = [
     path: '/settings',
     name: 'Settings',
     component: SettingsView
+  },
+  {
+    // Dienstplan-Import (lädt die Texterkennung erst bei Bedarf)
+    path: '/import',
+    name: 'ScheduleImport',
+    component: () => import('../views/ScheduleImportView.vue')
   }
 ]
 

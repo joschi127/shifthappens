@@ -7,6 +7,9 @@
         </ion-buttons>
         <ion-title>{{ monthName }} {{ currentYear }}</ion-title>
         <ion-buttons slot="end">
+          <ion-button @click="openImport" class="compact-nav-btn" aria-label="Dienstplan importieren">
+            <ion-icon slot="icon-only" :icon="cameraOutline"></ion-icon>
+          </ion-button>
           <div class="month-nav-group">
             <ion-button @click="prevMonth" class="compact-nav-btn">
               <ion-icon slot="icon-only" :icon="chevronBackOutline"></ion-icon>
@@ -138,8 +141,9 @@ import {
 } from '@ionic/vue';
 import { 
   chevronBackOutline, chevronForwardOutline, 
-  addOutline, trashOutline, locateOutline 
+  addOutline, trashOutline, locateOutline, cameraOutline
 } from 'ionicons/icons';
+import { useRouter } from 'vue-router';
 import { db, Shift, ShiftType } from '../db';
 import { markLocalModified } from '../services/googleDriveService';
 import { liveQuery } from 'dexie';
@@ -299,6 +303,12 @@ const isShiftCrossingMidnight = (shift: Shift) => {
     isNightStandby: shift.isNightStandby, nightStandbyStartTime: standbyStartTime, nightStandbyEndTime: standbyEndTime,
     isSplitShift: shift.isSplitShift, splitStartTime, splitEndTime
   });
+};
+
+// Dienstplan-Import für den angezeigten Monat
+const router = useRouter();
+const openImport = () => {
+  router.push({ path: '/import', query: { month: `${currentYear.value}-${String(currentMonth.value + 1).padStart(2, '0')}` } });
 };
 
 // "Geprüft": Prüfhinweis entfernen (ADR 0014)

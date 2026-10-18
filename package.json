@@ -4,7 +4,9 @@
   "description": "Eine mobile Progressive Web App (PWA) zur Verwaltung von persönlichen Dienst- und Schichtplänen.",
   "main": "index.js",
   "scripts": {
+    "predev": "node scripts/copy-tesseract-assets.mjs",
     "dev": "vite",
+    "prebuild": "node scripts/copy-tesseract-assets.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",

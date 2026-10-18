@@ -66,6 +66,14 @@ export interface ImportTemplate {
   id: string;
   name: string;
   orientation: 'horizontal' | 'vertical';
+  // Aufbau eines Personenblocks: Anzahl Unterzeilen und Rolle der Zeilen (PRD Dienstplan-Import)
+  subRows?: number;
+  dutyRow?: number;
+  absenceRow?: number;
+  standbyRow?: number;
+  // Blockhöhe ÷ Spaltenbreite, beim Bestätigen der Ecken gelernt (für die automatische Blocksuche)
+  blockRatio?: number;
+  lastUsed?: boolean;      // zuletzt genutztes Format, wird beim nächsten Import vorgeschlagen
   // Ecken des eigenen Streifens: oben links, oben rechts, unten rechts, unten links
   region?: [NormalizedPoint, NormalizedPoint, NormalizedPoint, NormalizedPoint];
   // Anteil der Namenszelle am Streifen (0..1), wird vor der Erkennung abgeschnitten

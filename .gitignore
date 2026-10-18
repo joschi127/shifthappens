@@ -68,6 +68,9 @@ browserconfig.xml
 /temp/*
 !/temp/.gitkeep
 
+# Dateien für die Texterkennung, werden vor dev/build aus node_modules kopiert (scripts/copy-tesseract-assets.mjs)
+/public/tesseract/
+
 # Sprachdaten, die tesseract.js bei Simulationsläufen (scripts/poc-local-recognition/) im Arbeitsverzeichnis zwischenspeichert
 *.traineddata
 

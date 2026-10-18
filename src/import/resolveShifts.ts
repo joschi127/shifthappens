@@ -29,6 +29,7 @@ export interface ProposalItem {
 export interface DayProposal {
   date: string;              // YYYY-MM-DD
   items: ProposalItem[];
+  uncertainEmpty?: boolean;  // Dienstzeile unsicher, vermutlich frei – bitte bestätigen
   consumedByPrevious?: boolean; // Dienst dieses Tages gehört zur Kombination des Vortags
 }
 
@@ -76,7 +77,10 @@ export function resolveShifts(days: DayReading[], options: ResolveOptions): DayP
     if (result[d].consumedByPrevious) continue;
 
     const { code, uncertain } = readValue(day.duty);
-    if (!code || isIgnored(code)) continue;
+    if (!code || isIgnored(code)) {
+      if (uncertain) result[d].uncertainEmpty = true;
+      continue;
+    }
 
     // Kombination über zwei Tage
     const next = days[d + 1];
@@ -95,7 +99,11 @@ export function resolveShifts(days: DayReading[], options: ResolveOptions): DayP
         continue;
       }
     }
-    result[d].items.push(itemFor('duty', code, uncertain, singles(shiftTypes), shiftTypes, byPrefix));
+    // Abwesenheitskürzel können auch in der Dienstzeile stehen (Pläne ohne eigene Abwesenheitszeile)
+    const absenceInDuty = singles(absenceTypes).find(s => sameEntry(s.code, code));
+    result[d].items.push(absenceInDuty
+      ? itemFor('absence', code, uncertain, singles(absenceTypes), absenceTypes, byPrefix)
+      : itemFor('duty', code, uncertain, singles(shiftTypes), shiftTypes, byPrefix));
   }
   return result;
 }

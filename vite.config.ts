@@ -12,6 +12,15 @@ export default defineConfig({
     vue(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: {
+        // Texterkennung (mehrere MB) nicht vorab laden, sondern beim ersten Einsatz cachen
+        globIgnores: ['**/tesseract/**'],
+        runtimeCaching: [{
+          urlPattern: ({ url }) => url.pathname.includes('/tesseract/'),
+          handler: 'CacheFirst',
+          options: { cacheName: 'tesseract-assets', expiration: { maxEntries: 10 } }
+        }]
+      },
       includeAssets: ['icon.svg', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
         name: 'ShiftHappens',

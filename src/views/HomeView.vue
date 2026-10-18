@@ -93,6 +93,9 @@
           <ion-button expand="block" router-link="/calendar">
             Zum Kalender
           </ion-button>
+          <ion-button expand="block" fill="outline" router-link="/import">
+            Dienstplan importieren
+          </ion-button>
           <ion-button expand="block" fill="outline" router-link="/shift-types">
             Schicht-Vorlagen verwalten
           </ion-button>

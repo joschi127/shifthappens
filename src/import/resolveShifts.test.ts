@@ -45,6 +45,11 @@ describe('resolveShifts', () => {
     expect(r.map(d => d.items.map(i => i.shiftTypeId))).toEqual([[5], [5, 1]]);
   });
 
+  it('erkennt Abwesenheitskürzel auch in der Dienstzeile', () => {
+    const [d0] = resolveShifts([day(sure('U'))], opts);
+    expect(d0.items).toEqual([expect.objectContaining({ kind: 'absence', shiftTypeId: 5, status: 'ok' })]);
+  });
+
   it('markiert unsichere Zellen und nutzt den Vorschlag', () => {
     const [d0] = resolveShifts([day(unsure('F01'))], opts);
     expect(d0.items[0]).toMatchObject({ shiftTypeId: 1, status: 'uncertain', review: expect.any(String) });
@@ -53,6 +58,12 @@ describe('resolveShifts', () => {
   it('löst unvollständige Kürzel über die erste passende Vorlage auf und markiert sie', () => {
     const [d0] = resolveShifts([day(unsure('', 'S'))], opts);
     expect(d0.items[0]).toMatchObject({ shiftTypeId: 2, status: 'uncertain', review: 'Unvollständiges Kürzel „S“ – bitte prüfen' });
+  });
+
+  it('kennzeichnet unsichere Zellen, die vermutlich frei sind', () => {
+    const [d0, d1] = resolveShifts([day(unsure('')), day(sure(''))], opts);
+    expect(d0).toMatchObject({ items: [], uncertainEmpty: true });
+    expect(d1.uncertainEmpty).toBeUndefined();
   });
 
   it('meldet unbekannte Kürzel ohne Zuordnung', () => {
