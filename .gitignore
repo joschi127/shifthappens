@@ -68,7 +68,7 @@ browserconfig.xml
 /temp/*
 !/temp/.gitkeep
 
-# Sprachdaten, die tesseract.js bei Simulationsläufen (scripts/poc-lokale-erkennung/) im Arbeitsverzeichnis zwischenspeichert
+# Sprachdaten, die tesseract.js bei Simulationsläufen (scripts/poc-local-recognition/) im Arbeitsverzeichnis zwischenspeichert
 *.traineddata
 
 # local/: dauerhaft aufzubewahrende, aber private Daten (z. B. echte Dienstpläne als Testdaten).

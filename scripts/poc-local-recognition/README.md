@@ -10,10 +10,10 @@ Die Abhängigkeiten werden nur temporär installiert und landen nicht in der `pa
 npm install --no-save tesseract.js pngjs jpeg-js
 ```
 
-## `auswertung.mjs`: alle Beispiele auf einmal (Regressionsprüfung)
+## `evaluate.mjs`: alle Beispiele auf einmal (Regressionsprüfung)
 
 ```sh
-node scripts/poc-lokale-erkennung/auswertung.mjs [ausgabeordner]
+node scripts/poc-local-recognition/evaluate.mjs [ausgabeordner]
 ```
 
 - **Was ausgewertet wird:** alle `*.erwartet.json` in `docs/beispiele/dienstplaene/` und, falls vorhanden, in `local/dienstplaene/`, und zwar für jedes Bild mit hinterlegten Ecken (`auswertung` in der JSON-Datei).
@@ -21,10 +21,10 @@ node scripts/poc-lokale-erkennung/auswertung.mjs [ausgabeordner]
 - **Ausgabe:** eine Tabelle mit „sicher richtig / sicher falsch / unsicher“ je Bild und Zeile. Bei Bildern mit handschriftlichen Korrekturen steht dazu, ob die Zelle als unsicher markiert wurde. Ausgegeben werden nur Kennzahlen, keine Namen.
 - **Laufzeit:** etwa 2–3 Minuten für alle Bilder.
 
-## `finde-zeile.mjs`: eigenen Block finden
+## `find-block.mjs`: eigenen Block finden
 
 ```sh
-BLOCK_RATIO=2.66 node scripts/poc-lokale-erkennung/finde-zeile.mjs <bild> <profil.json> [rotate90] > ecken.json
+BLOCK_RATIO=2.66 node scripts/poc-local-recognition/find-block.mjs <bild> <profil.json> [rotate90] > ecken.json
 ```
 
 - **Profil:** `profil.json` enthält `{"rosterNames": ["Nachname, Vorname"]}`, wie „Name im Dienstplan“.
@@ -36,13 +36,13 @@ BLOCK_RATIO=2.66 node scripts/poc-lokale-erkennung/finde-zeile.mjs <bild> <profi
   4. Senkrechte Ränder per Linienverfolgung
   5. Oberkante als stärkste Gitterlinie über dem Namen, Unterkante nahe der erwarteten Blockhöhe
 
-## `lokale-erkennung.mjs`: Zellen erkennen und mit erwarteten Werten vergleichen
+## `recognize.mjs`: Zellen erkennen und mit erwarteten Werten vergleichen
 
 ```sh
 TEMPLATES=1 T_MIN=0.85 T_MARGIN=0.10 SNAP=1 MODE=gray SCALE=2 PLANINK=1 \
 INSET_L=0.06 INSET_R=0.02 INSET_Y=0.1 LINEFIX=1 ROWOCR=1 ROWPSM=sparse GAP=60 \
-IGNORE='////,D03' ERWARTET=<erwartet.json> [PERSON=<index>] \
-node scripts/poc-lokale-erkennung/lokale-erkennung.mjs <bild> '<ecken>' <ausgabeordner> [rotate90]
+IGNORE='////,D03' EXPECTED=<erwartet.json> [PERSON=<index>] \
+node scripts/poc-local-recognition/recognize.mjs <bild> '<ecken>' <ausgabeordner> [rotate90]
 ```
 
 Mit `PERSON` wird nur ein Personenblock ausgewertet, die Ecken sind dann die des Blocks. Ohne `PERSON` wird die ganze Tabelle mit 35 Unterzeilen ausgewertet.

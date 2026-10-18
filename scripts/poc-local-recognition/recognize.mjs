@@ -1,6 +1,6 @@
 // PoC (Simulation): lokale Erkennung von D-, S- und B-Zeile eines Dienstplans mit tesseract.js.
 // Kein Produktivcode. Ergebnisse und Einordnung: docs/adr/0001-texterkennung-lokal-vor-cloud.md (Nachträge),
-// Aufruf und Parameter: scripts/poc-lokale-erkennung/README.md
+// Aufruf und Parameter: scripts/poc-local-recognition/README.md
 import fs from 'node:fs';
 import { PNG } from 'pngjs';
 import jpeg from 'jpeg-js';
@@ -9,7 +9,7 @@ import { createWorker, PSM } from 'tesseract.js';
 const [, , imgPath, cornersJson, outDir, rotateFlag] = process.argv;
 fs.mkdirSync(outDir, { recursive: true });
 const loadRoster = (file) => { const r = JSON.parse(fs.readFileSync(file, 'utf-8')); return r.basis ? { ...loadRoster(file.replace(/[^/]+\.erwartet\.json$/, `${r.basis}.erwartet.json`)), ...r } : r; };
-const ROSTER = loadRoster(process.env.ERWARTET);
+const ROSTER = loadRoster(process.env.EXPECTED);
 if (process.env.PERSON) ROSTER.zeilen = [ROSTER.zeilen[Number(process.env.PERSON)]]; // nur ein Personenblock
 
 // ---------- Bild laden (RGBA) ----------
@@ -428,8 +428,7 @@ if (SUB >= 3) {
   for (const c of sureWrong) console.log(`   S sicher falsch: ${ROSTER.zeilen[c.p].name}, Tag ${c.d + 1}: erwartet "${c.expected}", roh "${c.got}", Ergebnis "${c.voted}"`);
 }
 
-// ---------- Ergebnis je Zelle für die Gesamtauswertung (scripts/poc-lokale-erkennung/auswertung.mjs) ----------
-fs.writeFileSync(`${outDir}/ergebnis.json`, JSON.stringify({
-  D: dcells.map(c => ({ person: ROSTER.zeilen[c.p].name ?? ROSTER.zeilen[c.p].kuerzel, tag: c.d + 1, erwartet: c.expected, roh: c.got, ergebnis: c.voted, unsicher: c.unsure })),
-  S: scells.map(c => ({ person: ROSTER.zeilen[c.p].name, tag: c.d + 1, erwartet: c.expected, roh: c.got, ergebnis: c.voted, unsicher: c.unsure }))
-}));
+// ---------- Ergebnis je Zelle für die Gesamtauswertung (scripts/poc-local-recognition/evaluate.mjs) ----------
+const label = (p) => ROSTER.zeilen[p].name ?? ROSTER.zeilen[p].kuerzel;
+const toResult = (c) => ({ person: label(c.p), day: c.d + 1, expected: c.expected, raw: c.got, result: c.voted, uncertain: c.unsure });
+fs.writeFileSync(`${outDir}/result.json`, JSON.stringify({ D: dcells.map(toResult), S: scells.map(toResult) }));

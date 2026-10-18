@@ -1,5 +1,5 @@
 // PoC: eigenen Personenblock automatisch finden (Name per OCR, Spalten per Tageszahlen, Grenzen per Gitterlinien)
-// Aufruf: node finde-zeile.mjs <bild> <profil.json> [rotate90] [unterzeilen=5]
+// Aufruf: node scripts/poc-local-recognition/find-block.mjs <bild> <profil.json> [rotate90] [unterzeilen=5]
 // Ausgabe: JSON mit vier Ecken (oben links, oben rechts, unten rechts, unten links) des Tagesbereichs des Blocks
 import fs from 'node:fs';
 import { PNG } from 'pngjs';

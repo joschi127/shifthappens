@@ -69,7 +69,7 @@ Vier Dummy-Dienstpläne mit erwarteten Werten liegen in [`docs/beispiele/dienstp
 4. **Import-Vorlage**
    - Beschreibt Lage, Anzahl der Unterzeilen und deren Rollen, das Verhältnis Blockhöhe zu Spaltenbreite (für die automatische Blocksuche) sowie die zuletzt gewählte Bereichslage.
    - Wird unter `importSettings.templates` gespeichert (ADR 0003). Beim ersten Import einer neuen Form legt der Nutzer die Rollen fest.
-5. **Erkennung** (lokal, ADR 0001; Parameter in `scripts/poc-lokale-erkennung/README.md`)
+5. **Erkennung** (lokal, ADR 0001; Parameter in `scripts/poc-local-recognition/README.md`)
    - **Vorverarbeitung je Zelle:** Graustufen mit Kontraststreckung, bei dunklem Hintergrund invertiert, zweifach hochskaliert. Der Rand ist links größer als rechts, weil die Schrift bis an die rechte Gitterlinie reicht. Gitterlinien am Zellrand werden entfernt statt abgeschnitten.
    - **Streifen-Erkennung:** Die Zellen einer Unterzeile werden mit Abstand nebeneinandergesetzt und in einem Aufruf erkannt (Tesseract „verstreuter Text“). Die Wörter werden per Position den Tagen zugeordnet. Verschmolzene Lesungen verfallen, dann zählt die Erkennung der Einzelzelle.
    - **Zeichenliste:** alle Zeichen der hinterlegten Schichtkürzel und `-`.
@@ -122,7 +122,7 @@ Vier Dummy-Dienstpläne mit erwarteten Werten liegen in [`docs/beispiele/dienstp
 
 ## Ergebnis der Simulation (18.10.2026)
 
-Simulation mit `tesseract.js` 7 in Node, Skripte und beste Einstellung in [`scripts/poc-lokale-erkennung/`](../../scripts/poc-lokale-erkennung/README.md). Gesamtauswertung aller Beispielbilder mit einem Befehl (`auswertung.mjs`), darunter ein **echtes Handyfoto** eines Dienstplans (nur lokal, nicht im Repo). Details: ADR 0001, Nachträge 1–3.
+Simulation mit `tesseract.js` 7 in Node, Skripte und beste Einstellung in [`scripts/poc-local-recognition/`](../../scripts/poc-local-recognition/README.md). Gesamtauswertung aller Beispielbilder mit einem Befehl (`evaluate.mjs`), darunter ein **echtes Handyfoto** eines Dienstplans (nur lokal, nicht im Repo). Details: ADR 0001, Nachträge 1–3.
 
 | Szenario | D-Zeile: sicher falsch / unsicher | S-Zeile: sicher falsch / unsicher |
 |---|---|---|

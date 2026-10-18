@@ -10,6 +10,11 @@
 - **Changelog-Pflicht:** Jede signifikante Änderung oder jedes neue Feature muss im `docs/changelog.md` unter der Sektion `[Unreleased]` dokumentiert werden.
 - **Code-Stil:** Einheitliche Formatierung und klare Benennung von Variablen und Funktionen.
 
+## Sprache
+- **Code auf Englisch:** Datei- und Ordnernamen im Code (`src/`, `scripts/`), Funktionen, Variablen, Typen, Felder im Datenmodell, npm-Skripte und Umgebungsvariablen (z. B. `backupService.ts`, `shiftFromType`, `rosterNames`, `test:watch`).
+- **Alles andere auf Deutsch:** Kommentare im Code, Oberflächentexte, Doku (`docs/`), Changelog, Commit-Nachrichten.
+- Daten und Ordner, die zur Doku gehören (z. B. `docs/beispiele/` mit deutschen Feldnamen in den `*.erwartet.json`), dürfen deutsch benannt sein. Neue Felder im Datenmodell der App sind immer englisch.
+
 ## Anforderungen & Architekturentscheidungen
 - **PRD pro Feature:** Größere neue Features bekommen ein Anforderungsdokument in `docs/prd/<feature>.md` (Ziel, Grundsätze, Funktionsumfang, Einschränkungen, Umsetzungsschritte mit Status). Es wird während der Umsetzung aktuell gehalten.
 - **ADR pro Architekturentscheidung:** Entscheidungen, die über ein einzelnes Feature hinaus wirken oder später angezweifelt werden könnten (z. B. Datenmodell, Backup-Format, externe Dienste), werden als ADR in `docs/adr/NNNN-kurzer-titel.md` festgehalten (Status, Kontext, Entscheidung, Konsequenzen). ADRs werden fortlaufend nummeriert und nicht umgeschrieben; ändert sich eine Entscheidung, entsteht ein neues ADR, das das alte ersetzt bzw. ergänzt (Status des alten entsprechend anpassen).

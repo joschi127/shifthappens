@@ -60,7 +60,7 @@ Für den Cloud-Fall ist schon vorgemerkt:
 
 **Anlass:** Mit Variante 3 (realistisches Format) war die rein lokale Erkennung fraglich. Der Plan hat farbige Zellen mit heller Schrift, dreistellige Kürzel mit Ziffern und kleine Schrift. Das Foto ist um 90° gedreht und hat einen Falz.
 
-**Vorgehen:** Simulation in Node mit `tesseract.js` 7, also derselben Bibliothek wie später im Browser. Skript: [`scripts/poc-lokale-erkennung/lokale-erkennung.mjs`](../../scripts/poc-lokale-erkennung/lokale-erkennung.mjs). Nachgebildet wird der geplante Ablauf:
+**Vorgehen:** Simulation in Node mit `tesseract.js` 7, also derselben Bibliothek wie später im Browser. Skript: [`scripts/poc-local-recognition/recognize.mjs`](../../scripts/poc-local-recognition/recognize.mjs). Nachgebildet wird der geplante Ablauf:
 1. Vier Ecken des Tagesrasters setzen (von Hand, wie später durch den Nutzer)
 2. Entzerren und gleichmäßig in Zellen aufteilen
 3. Zelle vorverarbeiten: Graustufen, Kontraststreckung, Invertieren bei dunklem Hintergrund, zweifach hochskaliert
@@ -103,7 +103,7 @@ S-Zeile (`U`): 100 % bzw. 90 %. B-Zeile (beschriftet ja/nein): 100 %.
 
 **Erster Lauf mit dem Verfahren aus Nachtrag 1:** nur 66 von 210 Zellen sicher richtig. Ursache war die gleichmäßige Rasterteilung, die Text abschnitt und Linien mitnahm.
 
-**Verbesserungen (alle in `scripts/poc-lokale-erkennung/`, Parameter in `scripts/poc-lokale-erkennung/README.md`):**
+**Verbesserungen (alle in `scripts/poc-local-recognition/`, Parameter in `scripts/poc-local-recognition/README.md`):**
 1. **Zellgrenzen** auf die tatsächlichen Gitterlinien einrasten statt gleichmäßig teilen.
 2. **Ränder ungleich:** links 6 %, rechts nur 2 %. Gitterlinien am Zellrand werden gezielt entfernt statt abgeschnitten.
 3. **Streifen-Erkennung:** Die ganze Unterzeile wird als ein Bild mit Abständen erkannt (Tesseract „verstreuter Text“), die Wörter werden per Position den Tagen zugeordnet. Verschmolzene Lesungen werden verworfen.
@@ -112,7 +112,7 @@ S-Zeile (`U`): 100 % bzw. 90 %. B-Zeile (beschriftet ja/nein): 100 %.
 6. **Gefährliche Regel entfernt:** „erste drei Zeichen einrasten“ erzeugte sicher falsche Werte.
 7. **Verworfen:** eine Vorverarbeitung über die Abweichung vom lokalen Hintergrund (schlechter) und größere Skalierung (kein Gewinn).
 
-**Automatische Blocksuche** (`finde-zeile.mjs`), auf Wunsch der Fachseite:
+**Automatische Blocksuche** (`find-block.mjs`), auf Wunsch der Fachseite:
 1. Texterkennung über das ganze Bild, unscharfer Abgleich mit „Name im Dienstplan“. Rückfall: ein eindeutiger, langer Namensteil.
 2. Spalten per Ausgleichsgerade durch die erkannten Tageszahlen der Kopfzeile, robust gegen Fehltreffer.
 3. Senkrechte Ränder per Linienverfolgung. Oberkante als stärkste Gitterlinie über dem Namen. Unterkante nahe der erwarteten Blockhöhe; das Verhältnis Blockhöhe zu Spaltenbreite ist je Planformat fest und gehört in die Import-Vorlage.
@@ -137,7 +137,7 @@ Die Ecken weichen um 1–3 px von sorgfältig manuell gesetzten ab. Gefunden wur
 
 ## Nachtrag 3 (18.10.2026): Gesamtauswertung über alle Beispielbilder
 
-**Anlass:** Bisher waren nur Variante 3 und der echte Plan ausgewertet. Mit `scripts/poc-lokale-erkennung/auswertung.mjs` laufen jetzt alle Bilder mit einem Befehl. Die Ecken stehen je Bild in der `*.erwartet.json`.
+**Anlass:** Bisher waren nur Variante 3 und der echte Plan ausgewertet. Mit `scripts/poc-local-recognition/evaluate.mjs` laufen jetzt alle Bilder mit einem Befehl. Die Ecken stehen je Bild in der `*.erwartet.json`.
 
 **Gefundene Schwachstellen und Gegenmaßnahmen:**
 - **Variante 2, synthetisches Foto (unscharf, kontrastarm): 36 sicher falsche Zellen.** Eine absolute Kontrastschwelle hielt Buchstaben für leere Zellen. Lösung: Ob eine Zelle leer ist, wird **pro Plan** entschieden, mit einer Schwelle aus der Verteilung der Zellkontraste (Otsu). Sicher leer ist eine Zelle nur klar unterhalb der Schwelle, der Zwischenbereich gilt als unsicher. „-“ ist nur sicher, wenn die Zelle nicht deutlich mehr Tinte hat als typische Strich-Zellen.
