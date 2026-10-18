@@ -1,6 +1,6 @@
 # 0001: Texterkennung beim Dienstplan-Import zuerst lokal, Cloud nur als Rückfall
 
-- **Status:** Angenommen. Zwei Nachträge vom 18.10.2026 mit Ergebnissen der Simulation (unten).
+- **Status:** Angenommen. Drei Nachträge vom 18.10.2026 mit Ergebnissen der Simulation (unten).
 - **Datum:** 18.10.2026
 - **Feature:** [Dienstplan-Import](../prd/dienstplan-import.md)
 
@@ -60,7 +60,7 @@ Für den Cloud-Fall ist schon vorgemerkt:
 
 **Anlass:** Mit Variante 3 (realistisches Format) war die rein lokale Erkennung fraglich. Der Plan hat farbige Zellen mit heller Schrift, dreistellige Kürzel mit Ziffern und kleine Schrift. Das Foto ist um 90° gedreht und hat einen Falz.
 
-**Vorgehen:** Simulation in Node mit `tesseract.js` 7, also derselben Bibliothek wie später im Browser. Skript: [`scripts/poc/lokale-erkennung.mjs`](../../scripts/poc/lokale-erkennung.mjs). Nachgebildet wird der geplante Ablauf:
+**Vorgehen:** Simulation in Node mit `tesseract.js` 7, also derselben Bibliothek wie später im Browser. Skript: [`scripts/poc-lokale-erkennung/lokale-erkennung.mjs`](../../scripts/poc-lokale-erkennung/lokale-erkennung.mjs). Nachgebildet wird der geplante Ablauf:
 1. Vier Ecken des Tagesrasters setzen (von Hand, wie später durch den Nutzer)
 2. Entzerren und gleichmäßig in Zellen aufteilen
 3. Zelle vorverarbeiten: Graustufen, Kontraststreckung, Invertieren bei dunklem Hintergrund, zweifach hochskaliert
@@ -103,7 +103,7 @@ S-Zeile (`U`): 100 % bzw. 90 %. B-Zeile (beschriftet ja/nein): 100 %.
 
 **Erster Lauf mit dem Verfahren aus Nachtrag 1:** nur 66 von 210 Zellen sicher richtig. Ursache war die gleichmäßige Rasterteilung, die Text abschnitt und Linien mitnahm.
 
-**Verbesserungen (alle in `scripts/poc/`, Parameter in `scripts/poc/README.md`):**
+**Verbesserungen (alle in `scripts/poc-lokale-erkennung/`, Parameter in `scripts/poc-lokale-erkennung/README.md`):**
 1. **Zellgrenzen** auf die tatsächlichen Gitterlinien einrasten statt gleichmäßig teilen.
 2. **Ränder ungleich:** links 6 %, rechts nur 2 %. Gitterlinien am Zellrand werden gezielt entfernt statt abgeschnitten.
 3. **Streifen-Erkennung:** Die ganze Unterzeile wird als ein Bild mit Abständen erkannt (Tesseract „verstreuter Text“), die Wörter werden per Position den Tagen zugeordnet. Verschmolzene Lesungen werden verworfen.
@@ -134,6 +134,29 @@ Die Ecken weichen um 1–3 px von sorgfältig manuell gesetzten ab. Gefunden wur
 - **Muster aus der ganzen Tabelle** wären robuster als aus dem eigenen Block, weil es mehr Beispiele gibt. Das bleibt lokal und datenschutzrechtlich unkritisch, denn importiert wird weiterhin nur die eigene Zeile.
 
 **Folgerung:** Die lokale Erkennung ist auch für ein echtes Foto tragfähig. Die Cloud-Erkennung wird nicht weiterverfolgt. Die Verfahren aus diesem Nachtrag sind Teil der Umsetzung (PRD, Schritte 4 und 5).
+
+## Nachtrag 3 (18.10.2026): Gesamtauswertung über alle Beispielbilder
+
+**Anlass:** Bisher waren nur Variante 3 und der echte Plan ausgewertet. Mit `scripts/poc-lokale-erkennung/auswertung.mjs` laufen jetzt alle Bilder mit einem Befehl. Die Ecken stehen je Bild in der `*.erwartet.json`.
+
+**Gefundene Schwachstellen und Gegenmaßnahmen:**
+- **Variante 2, synthetisches Foto (unscharf, kontrastarm): 36 sicher falsche Zellen.** Eine absolute Kontrastschwelle hielt Buchstaben für leere Zellen. Lösung: Ob eine Zelle leer ist, wird **pro Plan** entschieden, mit einer Schwelle aus der Verteilung der Zellkontraste (Otsu). Sicher leer ist eine Zelle nur klar unterhalb der Schwelle, der Zwischenbereich gilt als unsicher. „-“ ist nur sicher, wenn die Zelle nicht deutlich mehr Tinte hat als typische Strich-Zellen.
+- **Variante 3/4, Foto: Text der Nachbarzelle zugeordnet.** Die Streifen-Erkennung hat Text der Nachbarzelle zugeordnet („-“ wurde zu `S04`). Lösung: Widersprechen sich Streifen- und Einzelzellen-Lesung, oder meldet der Streifen Text, wo die Einzelzelle bei wenig Kontrast nichts liest, wird die Zelle unsicher.
+
+**Ergebnis** (D-Zeile bzw. S-Zeile: sicher richtig / **sicher falsch** / unsicher):
+
+| Bild | D-Zeile | S-Zeile | Handschriftliche Korrekturen |
+|---|---|---|---|
+| Variante 1 sauber / Foto | 360/**0**/0 · 360/**0**/0 | – | – |
+| Variante 2 sauber / Foto | 360/**0**/0 · 360/**0**/0 | – | – |
+| Variante 3 sauber / Foto | 199/**0**/0 · 196/**0**/3 | 210/**0**/0 · 207/**0**/3 | – |
+| Variante 4 sauber / Foto | 197/**0**/2 · 194/**0**/5 | 208/**0**/2 · 205/**0**/5 | alle markiert |
+| Echter Plan (lokal), ganze Tabelle | 181/**0**/19 | 172/**0**/38 | markiert |
+
+**Erkenntnisse:**
+- Über alle 9 Bilder und 3.486 bewertete Zellen gibt es **keine sicher falsche Zelle**.
+- **Handschriftliche Korrekturen** werden auch ohne eigene Erkennung von Durchstreichungen als unsicher markiert, weil der Strich die Lesung stört. Eine gezielte Erkennung (PRD Schritt 8) bleibt sinnvoll, um den Grund „Handschrift“ angeben zu können.
+- **S-Zeile des echten Plans:** 18 % unsicher, vorsichtiger als nötig. Das ist der Preis der planbezogenen Leer-Erkennung und kann in der Umsetzung nachgeschärft werden.
 
 ## Quellen
 

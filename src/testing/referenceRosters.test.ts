@@ -16,6 +16,12 @@ describe.each(['variante-1', 'variante-2', 'variante-3', 'variante-4'])('Referen
     }
   });
 
+  it('hat für jedes Bild die Ecken des Tagesrasters (für die Simulation)', () => {
+    for (const file of roster.dateien) {
+      expect(roster.auswertung?.[file]?.ecken, file).toHaveLength(4);
+    }
+  });
+
   it('hat pro Zeile genau einen Eintrag je Tag des Monats', () => {
     const daysInMonth = new Date(roster.jahr, roster.monat, 0).getDate();
     expect(roster.tage).toBe(daysInMonth);

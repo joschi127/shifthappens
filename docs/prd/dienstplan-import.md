@@ -69,11 +69,12 @@ Vier Dummy-Dienstpläne mit erwarteten Werten liegen in [`docs/beispiele/dienstp
 4. **Import-Vorlage**
    - Beschreibt Lage, Anzahl der Unterzeilen und deren Rollen, das Verhältnis Blockhöhe zu Spaltenbreite (für die automatische Blocksuche) sowie die zuletzt gewählte Bereichslage.
    - Wird unter `importSettings.templates` gespeichert (ADR 0003). Beim ersten Import einer neuen Form legt der Nutzer die Rollen fest.
-5. **Erkennung** (lokal, ADR 0001; Parameter in `scripts/poc/README.md`)
+5. **Erkennung** (lokal, ADR 0001; Parameter in `scripts/poc-lokale-erkennung/README.md`)
    - **Vorverarbeitung je Zelle:** Graustufen mit Kontraststreckung, bei dunklem Hintergrund invertiert, zweifach hochskaliert. Der Rand ist links größer als rechts, weil die Schrift bis an die rechte Gitterlinie reicht. Gitterlinien am Zellrand werden entfernt statt abgeschnitten.
    - **Streifen-Erkennung:** Die Zellen einer Unterzeile werden mit Abstand nebeneinandergesetzt und in einem Aufruf erkannt (Tesseract „verstreuter Text“). Die Wörter werden per Position den Tagen zugeordnet. Verschmolzene Lesungen verfallen, dann zählt die Erkennung der Einzelzelle.
    - **Zeichenliste:** alle Zeichen der hinterlegten Schichtkürzel und `-`.
-   - **Leere Zellen** werden über den Tintenanteil erkannt und gelten als „frei“.
+   - **Leere Zellen** werden **pro Plan** erkannt (Schwelle aus der Verteilung der Zellkontraste). Sicher leer nur klar unterhalb, sonst unsicher.
+   - **Widerspruch Streifen ↔ Einzelzelle** (z. B. Text der Nachbarzelle zugeordnet) macht die Zelle unsicher.
    - **Einrasten:** Typische Lesefehler werden bereinigt (O↔0, I/l↔1, S↔B/5 am Anfang). Fehlende Nullen werden ergänzt, wenn **genau ein** bekanntes Kürzel passt („F1“ → `F01`).
    - **Muster pro Plan:** Aus sicher gelesenen Zellen desselben Fotos entstehen Muster je Kürzel, auch für „-“. Unsichere Zellen werden nur bei hoher Ähnlichkeit (≥ 0,85) **und** klarem Abstand zum zweitbesten Muster (≥ 0,10) entschieden, sonst bleiben sie unsicher und bekommen einen Vorschlag. Die Muster sollen aus der **ganzen Tabelle** gelernt werden, nicht nur aus dem eigenen Block, weil das mehr Beispiele liefert. Das passiert nur lokal, importiert wird nur die eigene Zeile.
    - **Eine gültige eigene Lesung wird nie überstimmt.**
@@ -121,13 +122,13 @@ Vier Dummy-Dienstpläne mit erwarteten Werten liegen in [`docs/beispiele/dienstp
 
 ## Ergebnis der Simulation (18.10.2026)
 
-Simulation mit `tesseract.js` 7 in Node, Skripte und beste Einstellung in [`scripts/poc/`](../../scripts/poc/README.md). Getestet mit Variante 3 und einem **echten Handyfoto** eines Dienstplans (nur lokal, nicht im Repo). Details: ADR 0001, Nachträge 1 und 2.
+Simulation mit `tesseract.js` 7 in Node, Skripte und beste Einstellung in [`scripts/poc-lokale-erkennung/`](../../scripts/poc-lokale-erkennung/README.md). Gesamtauswertung aller Beispielbilder mit einem Befehl (`auswertung.mjs`), darunter ein **echtes Handyfoto** eines Dienstplans (nur lokal, nicht im Repo). Details: ADR 0001, Nachträge 1–3.
 
 | Szenario | D-Zeile: sicher falsch / unsicher | S-Zeile: sicher falsch / unsicher |
 |---|---|---|
 | Echter Plan, eigener Block, **Ecken automatisch gefunden** | **0** / 0 von 30 | **0** / 0 von 30 |
-| Variante 3, ganze Tabelle | **0** / 1 von 199 | **0** / 0 von 210 |
-| Alle Szenarien zusammen (1288 Zellen) | **0** / 3,3 % | **0** / 4,2 % |
+| Alle 9 Beispielbilder (Varianten 1–4 sauber und Foto, echter Plan), ganze Tabelle | **0** / 29 von 2.436 | **0** / 48 von 1.050 |
+| Handschriftliche Korrekturen (Variante 4, echter Plan) | alle als unsicher markiert | |
 
 - **Erfolgskriterium erfüllt:** keine sicher falsche Zelle, höchstens 15 % unsicher.
 - **Restrisiko:** seltene Kürzel, die im ausgewerteten Bereich nur einmal vorkommen und nicht gelesen werden. Dagegen helfen die strengen Schwellen und Muster aus der ganzen Tabelle.

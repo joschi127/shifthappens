@@ -1,6 +1,6 @@
 // PoC (Simulation): lokale Erkennung von D-, S- und B-Zeile eines Dienstplans mit tesseract.js.
 // Kein Produktivcode. Ergebnisse und Einordnung: docs/adr/0001-texterkennung-lokal-vor-cloud.md (Nachträge),
-// Aufruf und Parameter: scripts/poc/README.md
+// Aufruf und Parameter: scripts/poc-lokale-erkennung/README.md
 import fs from 'node:fs';
 import { PNG } from 'pngjs';
 import jpeg from 'jpeg-js';
@@ -133,6 +133,8 @@ function cellToPng(img, x0, y0, w, h, scale) {
   for (let t = 0; t < 256; t++) { wB += hist[t]; if (!wB) continue; const wF = total - wB; if (!wF) break; sumB += t * hist[t];
     const mB = sumB / wB, mF = (sum - sumB) / wF, v = wB * wF * (mB - mF) ** 2; if (v > best) { best = v; thr = t; } }
   const contrast = Math.sqrt(best / (total * total)); // grob: Abstand der Klassen
+  const mean = gray.reduce((a, b) => a + b, 0) / total;
+  const std = Math.sqrt(gray.reduce((a, b) => a + (b - mean) ** 2, 0) / total);
   // Hintergrund = Mehrheit; ist er dunkel, invertieren
   let darkCount = 0; for (const g of gray) if (g < thr) darkCount++;
   const invert = darkCount > total / 2;
@@ -154,11 +156,11 @@ function cellToPng(img, x0, y0, w, h, scale) {
     if (process.env.MODE === 'gray') {
       // Kontrast strecken zwischen Schrift- und Hintergrundmittel, Tesseract binarisiert selbst
       let t = (g - lo) / Math.max(1, hi - lo); if (invert) t = 1 - t;
-      v = contrast < 12 ? 255 : Math.round(255 * Math.min(1, Math.max(0, t)));
+      v = (process.env.PLANINK === '1' ? false : contrast < 12) ? 255 : Math.round(255 * Math.min(1, Math.max(0, t)));
     } else v = black ? 0 : 255;
     out[d] = out[d + 1] = out[d + 2] = v;
   }
-  return { img: { width: OW, height: OH, data: out }, inkRatio: ink / (cw * ch * S * S), invert };
+  return { img: { width: OW, height: OH, data: out }, inkRatio: ink / (cw * ch * S * S), invert, std };
 }
 
 // ---------- Ablauf ----------
@@ -292,24 +294,25 @@ for (let p = 0; p < ROSTER.zeilen.length; p++) {
   const person = ROSTER.zeilen[p];
   for (let d = 0; d < COLS; d++) {
     for (let [k, rowIdx, expected] of (SUB >= 3 ? [['D', 0, person.codes[d]], ['S', 1, person.sonder[d]], ['B', 2, person.bereitschaft[d]]] : [['D', 0, person.codes[d]]])) {
-      const { img: cell, inkRatio } = cellToPng(grid, ...cellRect(d, p * SUB + rowIdx), SCALE);
+      const { img: cell, inkRatio, std } = cellToPng(grid, ...cellRect(d, p * SUB + rowIdx), SCALE);
       let got = '', rawText = '';
-      if (inkRatio > 0.004) {
+      if (process.env.PLANINK === '1' || inkRatio > 0.004) {
         const p2 = new PNG({ width: cell.width, height: cell.height }); p2.data = Buffer.from(cell.data);
         const { data } = await worker.recognize(PNG.sync.write(p2));
         rawText = data.text.replace(/\s+/g, '').toUpperCase();
         got = normalize(data.text);
       }
+      const cellGot = got; let stripGot = '';
       if (k === 'D' && rowTexts[p]) {
         // Streifen-Ergebnis bevorzugen; nur wenn es nichts liefert, die Einzelzelle nehmen
         const rt = normalize(rowTexts[p].texts[d]);
         // Verschmolzene Lesung (länger als jedes bekannte Kürzel) verwerfen -> Einzelzelle zählt
         const maxLen = Math.max(...ROSTER.zeilen.flatMap(z => z.codes).map(c => c.length));
-        if (rt !== '' && rt.length <= maxLen) got = rt;
+        if (rt !== '' && rt.length <= maxLen) { got = rt; stripGot = rt; }
       }
       if (k === 'B') { got = /[A-Z0-9]{2,}/.test(rawText) ? 'x' : ''; expected = expected ? 'x' : ''; } // B-Zeile: nur beschriftet ja/nein
-      if (k === 'S') scells.push({ p, d, got: got === 'U' ? 'U' : got, expected, inkRatio, patch: patchOf(grid, ...cellRect(d, p * SUB + 1)) });
-      if (k === 'D') dcells.push({ p, d, got, expected, inkRatio, feat: feature(grid, ...cellRect(d, p * SUB)), patch: patchOf(grid, ...cellRect(d, p * SUB)) });
+      if (k === 'S') scells.push({ p, d, got: got === 'U' ? 'U' : got, expected, inkRatio, std, patch: patchOf(grid, ...cellRect(d, p * SUB + 1)) });
+      if (k === 'D') dcells.push({ p, d, got, cellGot, stripGot, expected, inkRatio, std, feat: feature(grid, ...cellRect(d, p * SUB)), patch: patchOf(grid, ...cellRect(d, p * SUB)) });
       const r = results[k]; r.n++;
       const free = (v) => v === '' || v === '-' || v === '–' || v === '—';
       if (got === expected || (free(got) && free(expected))) r.ok++; else {
@@ -337,12 +340,29 @@ const score = (label) => dcells.filter(c => (label(c) === c.expected) || (free(l
 for (const c of dcells) c.snapped = snap(c.got);
 // Eigene gültige Lesung bleibt; nur Lücken werden per Mehrheitsentscheid gefüllt und als unsicher markiert
 const K = Number(process.env.K || 6);
-const hasInk = (c) => c.inkRatio > 0.02;
+// Leer oder beschriftet: Schwelle je Plan aus der Verteilung der Zellkontraste (Otsu), statt absolut
+function otsu1d(values) {
+  const v = [...values].sort((a, b) => a - b); let best = -1, thr = v[0];
+  for (let i = 1; i < v.length; i++) { const a = v.slice(0, i), b = v.slice(i); const ma = a.reduce((x, y) => x + y, 0) / a.length, mb = b.reduce((x, y) => x + y, 0) / b.length;
+    const sc = a.length * b.length * (ma - mb) ** 2; if (sc > best) { best = sc; thr = (v[i - 1] + v[i]) / 2; } }
+  return thr;
+}
+const PLANINK = process.env.PLANINK === '1';
+const stdThr = PLANINK ? otsu1d(dcells.map(c => c.std)) : 0;
+const hasInk = (c) => PLANINK ? c.std > stdThr * 0.6 : c.inkRatio > 0.02; // großzügig: lieber unsicher als fälschlich leer
+const surelyEmpty = (c) => PLANINK ? c.std <= stdThr * 0.4 : !hasInk(c);
+const dashStd = (() => { const v = dcells.filter(c => c.got === '-').map(c => c.std).sort((a, b) => a - b); return v.length ? v[v.length >> 1] : Infinity; })();
 const inked = dcells.filter(c => hasInk(c));
 for (const c of dcells) {
   c.unsure = false;
-  if (KNOWN.includes(c.snapped)) { c.voted = c.snapped; continue; }
-  if (c.snapped === '-' || (c.snapped === '' && !hasInk(c))) { c.voted = '-'; continue; }
+  // "-" nur sicher, wenn die Zelle nicht deutlich mehr Tinte hat als typische Strich-Zellen
+  // Widerspruch Streifen <-> Einzelzelle (z. B. Streifen ordnet Text der Nachbarzelle zu) -> unsicher
+  const cellSnap = snap(c.cellGot);
+  const conflict = c.stripGot && cellSnap !== snap(c.stripGot) && (cellSnap === '-' || KNOWN.includes(cellSnap) || (cellSnap === '' && PLANINK && c.std <= stdThr));
+  if (!conflict) {
+    if (KNOWN.includes(c.snapped)) { c.voted = c.snapped; continue; }
+    if ((c.snapped === '-' && (!PLANINK || c.std <= dashStd * 1.6)) || (c.snapped === '' && surelyEmpty(c))) { c.voted = '-'; continue; }
+  }
   // Schrift vorhanden, aber nicht (gültig) gelesen
   c.unsure = true;
   const near = inked.filter(o => o !== c && KNOWN.includes(o.snapped)).map(o => ({ o, dist: 1 - o.feat.reduce((a, v, i) => a + v * c.feat[i], 0) }))
@@ -384,10 +404,11 @@ for (const [k, r] of Object.entries(results)) {
 // ---------- Nachbearbeitung S-Zeile (Abwesenheiten) ----------
 if (SUB >= 3) {
   const KNOWN_S = [...new Set(ROSTER.zeilen.flatMap(z => z.sonder || []))].filter(Boolean);
+  const sThr = process.env.PLANINK === '1' ? otsu1d(scells.map(c => c.std)) : 0;
   for (const c of scells) {
     c.unsure = false;
     if (KNOWN_S.includes(c.got)) { c.voted = c.got; continue; }
-    if (c.got === '' && c.inkRatio <= 0.02) { c.voted = ''; continue; }
+    if (c.got === '' && (process.env.PLANINK === '1' ? c.std <= sThr * 0.6 : c.inkRatio <= 0.02)) { c.voted = ''; continue; }
     c.unsure = true; c.voted = '';
   }
   // Muster: sicher gelesene Abwesenheiten und sicher leere Zellen
@@ -406,3 +427,9 @@ if (SUB >= 3) {
   console.log(`S-Zeile: sicher richtig ${sureOk}, SICHER FALSCH ${sureWrong.length}, unsicher markiert ${unsure.length} (davon Vorschlag richtig ${unsure.filter(ok).length}) – von ${scells.length}`);
   for (const c of sureWrong) console.log(`   S sicher falsch: ${ROSTER.zeilen[c.p].name}, Tag ${c.d + 1}: erwartet "${c.expected}", roh "${c.got}", Ergebnis "${c.voted}"`);
 }
+
+// ---------- Ergebnis je Zelle für die Gesamtauswertung (scripts/poc-lokale-erkennung/auswertung.mjs) ----------
+fs.writeFileSync(`${outDir}/ergebnis.json`, JSON.stringify({
+  D: dcells.map(c => ({ person: ROSTER.zeilen[c.p].name ?? ROSTER.zeilen[c.p].kuerzel, tag: c.d + 1, erwartet: c.expected, roh: c.got, ergebnis: c.voted, unsicher: c.unsure })),
+  S: scells.map(c => ({ person: ROSTER.zeilen[c.p].name, tag: c.d + 1, erwartet: c.expected, roh: c.got, ergebnis: c.voted, unsicher: c.unsure }))
+}));

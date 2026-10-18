@@ -1,6 +1,10 @@
 {
   "beschreibung": "Erwartete Werte für die Referenz-Dienstpläne variante-3-sauber.png und variante-3-foto.jpg (realistisches Format, erfundene Namen, keine Handschrift).",
   "dateien": ["variante-3-sauber.png", "variante-3-foto.jpg"],
+  "auswertung": {
+    "variante-3-sauber.png": {"ecken": [[325, 307], [2244, 307], [2244, 1496], [325, 1496]]},
+    "variante-3-foto.jpg": {"ecken": [[319.5, 286], [1351.5, 271], [1363.75, 932.5], [310, 949.5]], "drehung": 90}
+  },
   "titel": "Dienstplan",
   "planbereich": "SoWo BW Lindenhaus",
   "zeitraum": { "von": "2026-11-01", "bis": "2026-11-30" },

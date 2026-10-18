@@ -5,6 +5,10 @@
     "variante-4-sauber.png",
     "variante-4-foto.jpg"
   ],
+  "auswertung": {
+    "variante-4-sauber.png": {"ecken": [[325, 307], [2244, 307], [2244, 1496], [325, 1496]]},
+    "variante-4-foto.jpg": {"ecken": [[319.5, 286], [1351.5, 271], [1363.75, 932.5], [310, 949.5]], "drehung": 90}
+  },
   "handschrift": [
     {
       "art": "korrektur",

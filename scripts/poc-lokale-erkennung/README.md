@@ -4,16 +4,27 @@ Simulationsskripte für den [Dienstplan-Import](../../docs/prd/dienstplan-import
 
 ## Vorbereitung
 
-Die Abhängigkeiten werden nur temporär installiert und landen nicht in der `package.json`:
+Die Abhängigkeiten werden nur temporär installiert und landen nicht in der `package.json`. Die Sprachdaten, die `tesseract.js` dabei im Projektverzeichnis ablegt (`*.traineddata`), sind in `.gitignore` ausgeschlossen.
 
 ```sh
 npm install --no-save tesseract.js pngjs jpeg-js
 ```
 
+## `auswertung.mjs`: alle Beispiele auf einmal (Regressionsprüfung)
+
+```sh
+node scripts/poc-lokale-erkennung/auswertung.mjs [ausgabeordner]
+```
+
+- **Was ausgewertet wird:** alle `*.erwartet.json` in `docs/beispiele/dienstplaene/` und, falls vorhanden, in `local/dienstplaene/`, und zwar für jedes Bild mit hinterlegten Ecken (`auswertung` in der JSON-Datei).
+- **Einstellung:** die beste Einstellung (siehe unten).
+- **Ausgabe:** eine Tabelle mit „sicher richtig / sicher falsch / unsicher“ je Bild und Zeile. Bei Bildern mit handschriftlichen Korrekturen steht dazu, ob die Zelle als unsicher markiert wurde. Ausgegeben werden nur Kennzahlen, keine Namen.
+- **Laufzeit:** etwa 2–3 Minuten für alle Bilder.
+
 ## `finde-zeile.mjs`: eigenen Block finden
 
 ```sh
-BLOCK_RATIO=2.66 node scripts/poc/finde-zeile.mjs <bild> <profil.json> [rotate90] > ecken.json
+BLOCK_RATIO=2.66 node scripts/poc-lokale-erkennung/finde-zeile.mjs <bild> <profil.json> [rotate90] > ecken.json
 ```
 
 - **Profil:** `profil.json` enthält `{"rosterNames": ["Nachname, Vorname"]}`, wie „Name im Dienstplan“.
@@ -28,10 +39,10 @@ BLOCK_RATIO=2.66 node scripts/poc/finde-zeile.mjs <bild> <profil.json> [rotate90
 ## `lokale-erkennung.mjs`: Zellen erkennen und mit erwarteten Werten vergleichen
 
 ```sh
-TEMPLATES=1 T_MIN=0.85 T_MARGIN=0.10 SNAP=1 MODE=gray SCALE=2 \
+TEMPLATES=1 T_MIN=0.85 T_MARGIN=0.10 SNAP=1 MODE=gray SCALE=2 PLANINK=1 \
 INSET_L=0.06 INSET_R=0.02 INSET_Y=0.1 LINEFIX=1 ROWOCR=1 ROWPSM=sparse GAP=60 \
 IGNORE='////,D03' ERWARTET=<erwartet.json> [PERSON=<index>] \
-node scripts/poc/lokale-erkennung.mjs <bild> '<ecken>' <ausgabeordner> [rotate90]
+node scripts/poc-lokale-erkennung/lokale-erkennung.mjs <bild> '<ecken>' <ausgabeordner> [rotate90]
 ```
 
 Mit `PERSON` wird nur ein Personenblock ausgewertet, die Ecken sind dann die des Blocks. Ohne `PERSON` wird die ganze Tabelle mit 35 Unterzeilen ausgewertet.
@@ -45,9 +56,11 @@ Mit `PERSON` wird nur ein Personenblock ausgewertet, die Ecken sind dann die des
 | `LINEFIX=1` | Senkrechte Gitterlinien am Zellrand entfernen (**an**) |
 | `ROWOCR=1`, `ROWPSM=sparse`, `GAP=60` | Ganze Unterzeile als Streifen erkennen, Wörter per Position den Tagen zuordnen, verschmolzene Lesungen verwerfen (**an**) |
 | `TEMPLATES=1`, `T_MIN`, `T_MARGIN` | Muster pro Plan aus sicher gelesenen Zellen (inkl. „-“). Unsichere Zellen werden nur bei Ähnlichkeit ≥ `T_MIN` und Abstand ≥ `T_MARGIN` zum zweitbesten Muster entschieden (**0,85 / 0,10**). |
+| `PLANINK=1` | Leer oder beschriftet **pro Plan** entscheiden: Schwelle aus der Verteilung der Zellkontraste (Otsu). Sicher leer nur klar unterhalb, im Zwischenbereich unsicher. „-“ nur sicher, wenn die Zelle nicht deutlich mehr Tinte hat als typische Strich-Zellen. (**an**) |
+| (immer aktiv) | Widersprechen sich Streifen- und Einzelzellen-Lesung (z. B. Streifen ordnet Text der Nachbarzelle zu), wird die Zelle unsicher. |
 | `IGNORE` | Kürzel, die nicht bewertet werden, weil sie nicht zum Umfang gehören (`////`, `D03`) |
 
 ## Testdaten
 
-- **Öffentlich:** `docs/beispiele/dienstplaene/` (Variante 3: `variante-3-foto.jpg`). Die Ecken für die ganze Tabelle stehen in ADR 0001.
+- **Öffentlich:** `docs/beispiele/dienstplaene/`. Die Ecken der ganzen Tabelle stehen je Bild in der `*.erwartet.json` (`auswertung`).
 - **Privat:** `local/dienstplaene/` (echter Dienstplan, nicht im Repo, siehe `docs/guidelines.md`).

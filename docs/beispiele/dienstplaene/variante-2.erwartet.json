@@ -1,6 +1,10 @@
 {
   "beschreibung": "Erwartete Werte für die Referenz-Dienstpläne variante-2-sauber.png und variante-2-foto.jpg (aus Variante 1 abgeleitet, ohne Namensspalte; generierte Dummy-Daten, keine echten Personen).",
   "dateien": ["variante-2-sauber.png", "variante-2-foto.jpg"],
+  "auswertung": {
+    "variante-2-sauber.png": {"ecken": [[113, 219], [1680, 219], [1680, 705], [113, 705]]},
+    "variante-2-foto.jpg": {"ecken": [[245.5, 364.5], [1521.5, 332.9], [1527.4, 720.4], [219.1, 711.2]]}
+  },
   "titel": "Dienstplan November 2026",
   "jahr": 2026,
   "monat": 11,

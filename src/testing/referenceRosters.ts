@@ -59,6 +59,9 @@ export interface ReferenceRoster {
   unterzeilen?: Record<string, string>;
   legende?: ReferenceRosterLegendEntry[];
   zeilen: ReferenceRosterRow[];
+  // Je Bild: Ecken des Tagesrasters (oben links, oben rechts, unten rechts, unten links) und ggf. Drehung,
+  // für die Simulation in scripts/poc-lokale-erkennung/
+  auswertung?: Record<string, { ecken: [number, number][]; drehung?: number }>;
   // Varianten, die einen anderen Plan nur anders abbilden (z. B. mit Handschrift)
   basis?: string;
   handschrift?: ReferenceRosterHandwriting[];
