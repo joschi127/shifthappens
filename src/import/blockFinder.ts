@@ -80,7 +80,7 @@ function projectiveFit(points: [number, number][]): ((t: number) => number) | nu
 }
 
 // Spalten aus den erkannten Tageszahlen: robuste Ausgleichsgerade (x und y linear in der Tagesnummer)
-export function fitDayColumns(words: OcrWord[]): { colX: (day: number) => number; colY: (day: number) => number } | null {
+export function fitDayColumns(words: OcrWord[]): { colX: (day: number) => number; colY: (day: number) => number; found: number } | null {
   const days = words.filter(w => /^(0?[1-9]|[12][0-9]|3[01])$/.test(w.text))
     .map(w => ({ day: Number(w.text), x: (w.x0 + w.x1) / 2, y: (w.y0 + w.y1) / 2 }));
   let best: typeof days = [];
@@ -101,7 +101,7 @@ export function fitDayColumns(words: OcrWord[]): { colX: (day: number) => number
   // passend (x = (a·t + b) / (c·t + 1)), sofern genug Tageszahlen über den Monat verteilt erkannt wurden
   const spread = Math.max(...best.map(p => p.day)) - Math.min(...best.map(p => p.day));
   const colX = best.length >= 6 && spread >= 10 ? projectiveFit(best.map(p => [p.day, p.x])) ?? fit('x') : fit('x');
-  return { colX, colY: fit('y') };
+  return { colX, colY: fit('y'), found: best.length };
 }
 
 // Unter den deutlichen Linien (mindestens halb so stark wie die stärkste) die dem erwarteten Ort nächste
@@ -149,7 +149,7 @@ export function findBlock(img: Raster, words: OcrWord[], options: BlockFinderOpt
   };
   const leftHead = edgeNear(colY(1), colX(1) - cwLeft * 0.5, cwLeft * 0.35);
   const rightHead = edgeNear(colY(last), colX(last) + cwRight * 0.5, cwRight * 0.4);
-  const leftV = traceV(colY(1) + 10, leftHead), rightV = traceV(colY(last) + 10, rightHead);
+  let leftV = traceV(colY(1) + 10, leftHead), rightV = traceV(colY(last) + 10, rightHead);
 
   // Waagerechte Gitterlinien: Median über 20 Spalten (Buchstaben treffen nur einzelne Spalten), Schräglage aus der Kopfzeile
   const slope = (colY(last) - colY(1)) / (last - 1);
@@ -173,6 +173,27 @@ export function findBlock(img: Raster, words: OcrWord[], options: BlockFinderOpt
     : above.filter(p => p.s >= strongest * 0.6).sort((a, b) => b.y - a.y)[0]) ?? peaks[0];
   if (!topCandidate) return null;
   const top = topCandidate.y;
+
+  // Spaltenzahl prüfen (unterhalb der Oberkante, wo kaum Schrift die Linien stört): zwischen den Rändern
+  // müssen Tage + 1 senkrechte Linien liegen. Ist es eine mehr, sitzt ein Rand eine Spalte zu weit außen
+  // (Summen- oder Buchstabenspalte); dann wird die Randspalte verworfen, die am wenigsten wie eine Tagesspalte aussieht.
+  {
+    const x0 = leftV(top), x1 = rightV(top);
+    const yAt = (x: number) => top + slope * (x - x0) / cw;
+    const profile: { y: number; s: number }[] = [];
+    for (let x = Math.round(x0) - 3; x <= Math.round(x1) + 3; x++) profile.push({ y: x, s: lineVTall(x, yAt(x)) });
+    const r = Math.max(3, Math.round(cw * 0.3));
+    const maxima = profile.filter((p, i) => profile.slice(Math.max(0, i - r), i + r + 1).every(q => q.s <= p.s));
+    const top12 = maxima.map(p => p.s).sort((a, b) => b - a).slice(0, last + 1);
+    const level = top12.length ? top12[top12.length >> 1] * 0.4 : Infinity;
+    const lines = maxima.filter(p => p.s >= level).map(p => p.y);
+    if (lines.length === last + 2) {
+      const firstWidth = lines[1] - lines[0], lastWidth = lines[lines.length - 1] - lines[lines.length - 2];
+      const innerFirst = lines[2] - lines[1], innerLast = lines[lines.length - 2] - lines[lines.length - 3];
+      if (Math.abs(lastWidth / innerLast - 1) >= Math.abs(firstWidth / innerFirst - 1)) rightV = traceV(top, lines[lines.length - 2]);
+      else leftV = traceV(top, lines[1]);
+    }
+  }
   const expectedBottom = top + options.blockRatio * cw;
   const bottom = nearestStrong(peaks.filter(p => Math.abs(p.y - expectedBottom) <= cw * 0.3), expectedBottom) ?? Math.round(expectedBottom);
   const topH = traceH(leftV(top), rightV(top), top);
@@ -199,14 +220,13 @@ export function findBlock(img: Raster, words: OcrWord[], options: BlockFinderOpt
  * Feld für Feld ein zweites Mal gelesen (readNameColumn).
  */
 export async function locateBlock(img: Raster, engine: OcrEngine, options: BlockFinderOptions): Promise<BlockMatch | null> {
-  const match = await locateBlockByName(img, engine, options);
+  const { words } = await engine.recognize(img, { mode: 'sparse' });
+  const match = findBlock(img, words, options) ?? await findBlockInNameColumn(img, words, engine, options);
   return match && { ...match, corners: await refineBlock(img, match.corners, engine, options) };
 }
 
-async function locateBlockByName(img: Raster, engine: OcrEngine, options: BlockFinderOptions): Promise<BlockMatch | null> {
-  const { words } = await engine.recognize(img, { mode: 'sparse' });
-  const match = findBlock(img, words, options);
-  if (match) return match;
+// Zweiter Durchgang: Namensspalte Feld für Feld lesen (siehe readNameColumn)
+async function findBlockInNameColumn(img: Raster, words: OcrWord[], engine: OcrEngine, options: BlockFinderOptions): Promise<BlockMatch | null> {
   const cols = fitDayColumns(words);
   if (!cols) return null;
   const cw = (cols.colX(options.days) - cols.colX(1)) / (options.days - 1);
@@ -214,8 +234,8 @@ async function locateBlockByName(img: Raster, engine: OcrEngine, options: BlockF
   const right = Math.round(Math.min(cols.colX(1), cols.colX(options.days)) - cw);
   const top = Math.max(0, Math.round(Math.min(cols.colY(1), cols.colY(options.days))));
   if (right < 20 || top >= img.height - 20) return null;
-  const stripWords = await readNameColumn(img, engine, right, top, cw);
-  return findBlock(img, [...words, ...stripWords], options);
+  const nameWords = await readNameColumn(img, engine, right, top, cw);
+  return findBlock(img, [...words, ...nameWords], options);
 }
 
 /**
@@ -274,7 +294,8 @@ async function codesInRow(img: Raster, row: Quad, days: number, engine: OcrEngin
  */
 export async function refineBlock(img: Raster, corners: Quad, engine: OcrEngine, options: BlockFinderOptions): Promise<Quad> {
   const subRows = options.subRows ?? 1;
-  const codes = (options.dutyCodes ?? []).filter(c => !isFreeCode(c));
+  // Einbuchstabige Kürzel (z. B. „S“) kommen auch in anderem Text vor („So“, „Sa“) und zählen daher nicht
+  const codes = (options.dutyCodes ?? []).filter(c => !isFreeCode(c) && c.length >= 2);
   if (subRows < 2 || !codes.length) return corners;
   const count = (row: Quad) => insideImage(img, row) ? codesInRow(img, row, options.days, engine, codes) : Promise.resolve(-1);
   const dutyRowOf = (block: Quad) => quadSlice(block, 0, 1 / subRows);
@@ -299,18 +320,28 @@ export async function refineBlock(img: Raster, corners: Quad, engine: OcrEngine,
 }
 
 /**
- * Eigenen Block suchen, bei Bedarf im gedrehten Bild: zuerst wie fotografiert, dann um 90° in beide
- * Richtungen (Querformat-Pläne werden oft im Hochformat fotografiert), zuletzt auf dem Kopf.
+ * Eigenen Block suchen, bei Bedarf im gedrehten Bild: wie fotografiert, um 90° in beide Richtungen (Querformat-Pläne
+ * werden oft im Hochformat fotografiert) und auf dem Kopf. Zuerst schnell in allen Drehungen, den langsameren
+ * zweiten Durchgang (Namensspalte Feld für Feld) nur in den Drehungen, in denen die meisten Tageszahlen lesbar sind.
  * Liefert das (ggf. gedrehte) Bild mit dem Treffer.
  */
 export async function locateOwnBlock(img: Raster, engine: OcrEngine, options: BlockFinderOptions,
                                      onRotate?: () => void): Promise<{ image: Raster; match: BlockMatch } | null> {
   const candidates: (() => Raster)[] = [() => img, () => rotate90(img, 'cw'), () => rotate90(img, 'ccw'), () => rotate180(img)];
+  const refined = async (image: Raster, match: BlockMatch) =>
+    ({ image, match: { ...match, corners: await refineBlock(image, match.corners, engine, options) } });
+  const tried: { image: Raster; words: OcrWord[]; days: number }[] = [];
   for (const [index, candidate] of candidates.entries()) {
     if (index > 0) onRotate?.();
     const image = candidate();
-    const match = await locateBlock(image, engine, options);
-    if (match) return { image, match };
+    const { words } = await engine.recognize(image, { mode: 'sparse' });
+    const match = findBlock(image, words, options);
+    if (match) return refined(image, match);
+    tried.push({ image, words, days: fitDayColumns(words)?.found ?? 0 });
+  }
+  for (const { image, words } of tried.filter(t => t.days >= 3).sort((a, b) => b.days - a.days).slice(0, 2)) {
+    const match = await findBlockInNameColumn(image, words, engine, options);
+    if (match) return refined(image, match);
   }
   return null;
 }

@@ -5,7 +5,7 @@
         <ion-buttons slot="start">
           <ion-back-button default-href="/home"></ion-back-button>
         </ion-buttons>
-        <ion-title>{{ monthName }} {{ currentYear }}</ion-title>
+        <ion-title class="month-title">{{ monthName }} {{ currentYear }}</ion-title>
         <ion-buttons slot="end">
           <ion-button @click="openImport" class="compact-nav-btn" aria-label="Dienstplan importieren">
             <ion-icon slot="icon-only" :icon="cameraOutline"></ion-icon>
@@ -606,5 +606,11 @@ const deleteShift = async (id: number) => {
 
 .today-nav-btn ion-icon {
   font-size: 16px;
+}
+
+/* Monat und Jahr auch neben fünf Knöpfen vollständig zeigen (z. B. „September 2026“ auf 390 px) */
+.month-title {
+  padding-inline: 4px;
+  font-size: 1.05rem;
 }
 </style>

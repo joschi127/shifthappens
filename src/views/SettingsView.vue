@@ -55,8 +55,9 @@
               @update:model-value="updateProfile({ ignoreCodes: $event })"
             ></tag-list-input>
             <ion-note class="field-help">
-              Kürzel aus dem Papier-Dienstplan, für die keine Schicht eingetragen wird,
-              z.B. für frei, Urlaub oder krank (X, U, K).
+              Kürzel aus dem Papier-Dienstplan, für die nichts eingetragen werden soll, z. B. „X“.
+              Urlaub, Krankheit oder Fortbildung (U, K, FB) legst du dagegen als Schicht-Vorlage
+              der Art „Abwesenheit“ an, damit sie im Kalender erscheinen.
             </ion-note>
           </div>
         </ion-item>

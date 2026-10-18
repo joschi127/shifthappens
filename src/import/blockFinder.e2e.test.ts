@@ -57,7 +57,8 @@ describe.each(examples.map(e => [e.isLocal ? `local/${e.image}` : e.image, e] as
     const subRows = data.unterzeilen ? Object.keys(data.unterzeilen).length : 1;
     const format = IMPORT_FORMATS.find(f => (f.subRows ?? 1) === subRows)!;
     const persons = data.zeilen.length, days = data.tage;
-    const dutyCodes = [...new Set<string>(data.zeilen.flatMap((z: any) => z.codes))].filter(c => !isFreeCode(c));
+    // wie in der App: auch einbuchstabige Zweitkürzel (z. B. „S“ am Spätdienst) können vorkommen
+    const dutyCodes = [...new Set<string>([...data.zeilen.flatMap((z: any) => z.codes), 'S'])].filter(c => !isFreeCode(c));
     const photo = decode(path.join(example.dir, example.image));
     const upright = rotateBy(photo, example.rotate);
 

@@ -81,7 +81,8 @@
         <p class="ion-padding-horizontal step-text">
           {{ regionMessage }}
         </p>
-        <region-selector v-model:corners="corners" :image="image"></region-selector>
+        <!-- während der Suche ausgeblendet, sonst erscheinen kurz Platzhalter-Ecken -->
+        <region-selector v-if="!busy" v-model:corners="corners" :image="image"></region-selector>
         <div class="ion-padding">
           <div class="rotate-row">
             <ion-button fill="outline" size="small" @click="rotate('ccw')">
@@ -177,7 +178,7 @@
               Neue Vorlage mit Kürzel „{{ assignItem.code }}“
             </ion-button>
             <ion-button v-if="assignItem.status !== 'skipped'" expand="block" fill="outline" size="small" color="medium" @click="skipItem">
-              Überspringen (diesmal nicht übernehmen)
+              Diesmal überspringen
             </ion-button>
             <ion-button v-if="!isCombo(assignItem.code)" expand="block" fill="clear" size="small" color="medium" @click="ignoreAlways(assignItem.code)">
               Kürzel „{{ assignItem.code }}“ immer ignorieren
@@ -378,7 +379,7 @@ const applyRemovals = ref(true);
 // Raster in vielen Spalten nicht eindeutig (stark gewölbtes Blatt): Hinweis auf ein neues Foto
 const warpedPaper = ref(false);
 
-// Seitenverhältnis des bestätigten Blocks für die nächste automatische Suche merken
+// Seitenverhältnis des bestätigten Blocks für die nächste automatische Suche merken (nach überzeugender Erkennung)
 const learnBlockRatio = async () => {
   const learned = learnedBlockRatio(corners.value, daysInMonth.value, format.value);
   const saved = (await getImportTemplates()).map(t => ({ ...t, lastUsed: false }));
@@ -404,7 +405,6 @@ const runRecognition = async () => {
   if (!image.value) return;
   busy.value = true; progress.value = 0; busyText.value = 'Dienstplan wird erkannt …';
   try {
-    await learnBlockRatio();
     const f = format.value;
     const engine = await getBrowserEngine();
     // Nachbarblöcke dienen nur als zusätzliche Beispiele, übernommen wird nur der eigene Block
@@ -412,6 +412,10 @@ const runRecognition = async () => {
       { subRows: f.subRows ?? 1, dutyRow: f.dutyRow ?? 0, absenceRow: f.absenceRow, standbyRow: f.standbyRow },
       vocabulary(), engine, { onProgress: (done, total) => { progress.value = done / total; } });
     warpedPaper.value = (person.unreliableShare ?? 0) >= 0.2;
+    // Seitenverhältnis nur aus einem überzeugenden Ergebnis lernen: falsch gesetzte Ecken würden sonst
+    // die nächste automatische Suche verderben
+    const sureShare = person.duty.filter(c => !c.uncertain).length / person.duty.length;
+    if (!warpedPaper.value && sureShare >= 0.5) await learnBlockRatio();
     // Lieber ein neues Foto als eine schlechte Erkennung: bei stark gewölbtem Blatt zuerst darum bitten
     if (warpedPaper.value && !(await askForBetterPhoto())) { reset(); return; }
     const days: DayReading[] = person.duty.map((duty, d) => ({ duty, absence: person.absence?.[d], standby: person.standby?.[d] }));
@@ -743,5 +747,10 @@ const save = async () => {
   width: 16px;
   height: 16px;
   border-radius: 50%;
+}
+
+/* Lange Checkbox-Texte umbrechen statt am Bildschirmrand abschneiden */
+ion-checkbox::part(label) {
+  white-space: normal;
 }
 </style>

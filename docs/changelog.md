@@ -3,6 +3,14 @@
 Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
 ## [Unreleased]
+- **Dienstplan-Import, Funde aus dem Browser-Test:**
+  - Die Nachprüfung der Blocksuche zählt keine einbuchstabigen Kürzel mehr (ein Zweitkürzel „S“ verschob den Block wegen „So“/„Sa“).
+  - Das Seitenverhältnis wird nur nach überzeugender Erkennung gelernt (vorher verdarb ein Durchlauf mit falschen Ecken die nächste Suche).
+  - Die Drehungen werden zuerst schnell durchsucht, der langsame zweite Durchgang nur für die vielversprechendste Drehung.
+  - Zwischen den Tabellenrändern wird die Zahl der Spalten geprüft.
+  - Lange Checkbox-Texte werden umgebrochen, „Diesmal überspringen“ ist kürzer, und während der Suche erscheinen keine Platzhalter-Ecken mehr.
+- **Einstellungen:** Der Hilfetext zu „Kürzel ohne Eintrag“ verweist für Urlaub, krank und Fortbildung auf Abwesenheits-Vorlagen.
+- **Kalender:** Der Monatstitel wird neben den Knöpfen nicht mehr abgeschnitten.
 - **Dienstplan-Import, Umfang:** Pläne ohne Namen (Person nur über ein Kürzel, z. B. „AB“) sind offiziell nicht unterstützt; Hinweis in den Einstellungen, Eintrag im Ideen-Backlog für eine spätere, vermutlich KI-gestützte Prüfung.
 - **PRD-Entwurf Abwesenheiten:** Berücksichtigte Abwesenheitskürzel festgelegt: `U` (Urlaub), `K` (krank), `FB` (Fortbildung).
 - **Dienstplan-Import, besseres Foto anfordern:** Ist das Blatt so stark gewölbt, dass viele Tage nicht eindeutig zuzuordnen sind, bittet die App vor der Bestätigung um ein neues Foto („Neues Foto“ oder „Trotzdem prüfen“).
