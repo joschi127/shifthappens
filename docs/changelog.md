@@ -3,6 +3,8 @@
 Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
 ## [Unreleased]
+- **Open-Source-Lizenzen:** Neuer Eintrag in den Einstellungen („Über die App“ → „Open-Source-Lizenzen“) mit allen ausgelieferten Fremdbibliotheken und ihren Lizenztexten. Die Liste (`licenses.json`) entsteht beim Build automatisch aus dem Bundle, ergänzt um Texterkennung, Sprachdaten und Service Worker, und ist offline verfügbar ([ADR 0015](adr/0015-open-source-lizenzen-beim-build-erzeugen.md)).
+- **Roadmap:** PDF-Import des Dienstplans ins Ideen-Backlog verschoben.
 - **Dienstplan-Import, Schritte 3–6 (Eingabe, Bereich, Erkennung, Bestätigung):**
   - Neue Ansicht „Dienstplan importieren“ (`/import`), erreichbar über das Kamera-Symbol im Kalender (übernimmt den angezeigten Monat) und die Startseite: Foto aufnehmen oder Bild wählen, Monat und Aufbau je Person wählen, eigene Zeile wird automatisch gesucht (bei Bedarf im um 90° gedrehten Bild), Ecken mit Lupe korrigierbar, Erkennung lokal auf dem Gerät, Bestätigungsansicht mit Zuordnung per Antippen („Kürzel merken“, „Kein Eintrag“), Konflikte mit eigenen Schichten, Speichern mit Herkunft und Prüfhinweis; ein erneuter Import überschreibt früher importierte Schichten des Monats.
   - Erkennungsbibliothek in TypeScript (`src/import/`), portiert aus der Simulation inkl. aller Schutzregeln; zusätzlich werden auffällig kurze Kürzel (z. B. „S“ in einem Plan mit dreistelligen Kürzeln) als unsicher markiert.

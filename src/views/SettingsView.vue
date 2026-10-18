@@ -143,6 +143,20 @@
         </ion-item>
       </ion-list>
 
+      <ion-list :inset="true">
+        <ion-list-header>
+          <ion-label>Über die App</ion-label>
+        </ion-list-header>
+
+        <ion-item button router-link="/licenses">
+          <ion-icon slot="start" :icon="documentTextOutline"></ion-icon>
+          <ion-label>
+            <h2>Open-Source-Lizenzen</h2>
+            <p>Verwendete Bibliotheken und ihre Lizenztexte.</p>
+          </ion-label>
+        </ion-item>
+      </ion-list>
+
       <div class="ion-padding">
         <p class="ion-text-center version-text">
           ShiftHappens v1.0.0
@@ -176,6 +190,7 @@ import {
 import {
   cloudDownloadOutline,
   cloudUploadOutline,
+  documentTextOutline,
   moon,
   sunny,
   syncOutline,

@@ -39,7 +39,7 @@ Erweiterung um intelligente Features und Exporte.
   - **Backup & Sync** *(umgesetzt)*: Serverlose Synchronisation der App-Daten über das versteckte Google Drive Anwendungsdatenverzeichnis (`appDataFolder`). Siehe [PRD](prd/datensicherung-und-sync.md), [ADR 0008](adr/0008-sync-ueber-google-drive-appdata.md).
   - **Kalender-Abonnement (.ics)** *(offen)*: Generierung einer iCalendar-Datei (`.ics`) im regulären Google Drive des Nutzers mit öffentlichem Freigabelink zur Einbindung in Outlook, Apple Calendar oder Google Calendar. Automatische Neuerstellung bei Datenänderungen. Siehe [PRD](prd/kalender-teilen.md), [ADR 0011](adr/0011-kalender-teilen-per-ics-im-drive.md) (PoC ausstehend).
 - **Dienstplan-Import per Foto/PDF** *(in Arbeit)*: Papier- oder PDF-Dienstplan fotografieren bzw. hochladen; die App erkennt nur die eigene Zeile und trägt die Schichten nach Bestätigung ein. Anforderungen: [PRD](prd/dienstplan-import.md), Entscheidungen: [ADRs](adr/).
-- **Open-Source-Lizenzen anzeigen:** Beim Build automatisch erzeugte Liste der verwendeten Bibliotheken mit Lizenztexten (u. a. Vue, Ionic, Dexie, tesseract.js inkl. Sprachdaten) und ein Eintrag „Open-Source-Lizenzen“ in den Einstellungen. Hintergrund: Die Lizenzen (MIT, BSD, Apache-2.0) verlangen, dass Copyright-Hinweise und Lizenztexte bei der Weitergabe mitgeliefert werden.
+- **Open-Source-Lizenzen anzeigen** *(umgesetzt, [ADR 0015](adr/0015-open-source-lizenzen-beim-build-erzeugen.md))*: Beim Build automatisch erzeugte Liste der verwendeten Bibliotheken mit Lizenztexten (u. a. Vue, Ionic, Dexie, tesseract.js inkl. Sprachdaten) und ein Eintrag „Open-Source-Lizenzen“ in den Einstellungen. Hintergrund: Die Lizenzen (MIT, BSD, Apache-2.0) verlangen, dass Copyright-Hinweise und Lizenztexte bei der Weitergabe mitgeliefert werden.
 - **Export-Funktionen:** Export des Plans als PDF oder Text für Messenger-Dienste.
 
 ---
@@ -48,6 +48,7 @@ Erweiterung um intelligente Features und Exporte.
 Hier werden Ideen gesammelt, deren Umsetzung noch nicht feststeht, die aber Potenzial für die Zukunft haben.
 
 - **Schicht-Vorlagen automatisch aus Foto anlegen:** Knopf „Automatisch aus Foto anlegen“ mit Kamera-Symbol bei den Schicht-Vorlagen. Erkennt Kürzel (und, falls vorhanden, Legende oder Uhrzeiten) aus einem Dienstplan und schlägt daraus Vorlagen samt Schichtkürzeln vor. Startet man im Kalender den Foto-Import, ohne dass Vorlagen existieren, wird direkt dorthin verwiesen. Baut auf dem [Dienstplan-Import](prd/dienstplan-import.md) auf.
+- **Dienstplan-Import aus PDF:** PDF-Dienstpläne (mit Seitenauswahl) zusätzlich zu Fotos und Bildern importieren. Bis dahin genügt ein Screenshot der PDF-Seite. Siehe [PRD Dienstplan-Import](prd/dienstplan-import.md), Schritt 3.
 - **Rufbereitschaft:** Möglichkeit spezielle Rufbereitschafts-Schichten anzulegen.
 - **Smart-Checkout:** Automatisches Erkennen des Schichtendes über den Gerätestandort beim Verlassen des Arbeitsortes (Heimweg-Erkennung).
 - **Statistiken:** Auswertung von Arbeitszeiten und Schichtverteilungen.

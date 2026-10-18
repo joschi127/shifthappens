@@ -42,6 +42,11 @@ const routes: Array<RouteRecordRaw> = [
     component: SettingsView
   },
   {
+    path: '/licenses',
+    name: 'Licenses',
+    component: () => import('../views/LicensesView.vue')
+  },
+  {
     // Dienstplan-Import (lädt die Texterkennung erst bei Bedarf)
     path: '/import',
     name: 'ScheduleImport',

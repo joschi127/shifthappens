@@ -161,7 +161,7 @@ Simulation mit `tesseract.js` 7 in Node, Skripte und beste Einstellung in [`scri
    - Art der Vorlage (`kind`, ADR 0012), mit Editor und Kalenderanzeige von Abwesenheiten
    - Herkunft und Prüfhinweis an Schichten (ADR 0014), mit gelbem „?!“ und „Geprüft“
    - Zerlegung und Prüfung kombinierter Kürzel (ADR 0013) im Vorlagen-Editor
-3. ✅ **Eingabe:** Kamera und Datei, Normalisierung (EXIF-Drehung, Metadaten verworfen, Verkleinerung), Drehen (auch automatisch, wenn der Name nur im gedrehten Bild gefunden wird), Hinweis bei HEIC. **Offen:** PDF mit Seitenauswahl (bisher Hinweis „noch nicht unterstützt“).
+3. ✅ **Eingabe:** Kamera und Datei, Normalisierung (EXIF-Drehung, Metadaten verworfen, Verkleinerung), Drehen (auch automatisch, wenn der Name nur im gedrehten Bild gefunden wird), Hinweis bei HEIC. **PDF** mit Seitenauswahl ist auf später verschoben (Ideen-Backlog der Roadmap); bis dahin zeigt die App den Hinweis „noch nicht unterstützt“, ein Screenshot der PDF-Seite funktioniert.
 4. ✅ **Bereich und Raster:** automatische Blocksuche (Name, Tageszahlen, Gitterlinien), Viereck mit Lupe zur Kontrolle, Entzerrung, Einrasten auf Gitterlinien, Unterzeilen und Rollen in der Import-Vorlage, Monat und Jahr.
 5. ✅ **Lokale Erkennung:** Tesseract.js im Browser (selbst ausgeliefert, vom Service Worker gecacht) mit dem Verfahren aus der Simulation: Streifen-Erkennung, Einrasten, Muster pro Plan, Unsicherheit. Die Simulation dient als Regressionstest (Variante 3 als Vitest-Test, echter Plan lokal).
 6. ✅ **Kürzel auflösen, Bestätigungsansicht, Speichern, erneuter Import.**

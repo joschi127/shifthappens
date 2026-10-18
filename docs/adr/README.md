@@ -18,3 +18,4 @@ Format und Regeln: siehe [Guidelines](../guidelines.md#anforderungen--architektu
 | [0012](0012-abwesenheiten-als-vorlagen-art.md) | Abwesenheiten als eigene Art von Schicht-Vorlage | Angenommen |
 | [0013](0013-kombinierte-schichtkuerzel-ueber-zwei-tage.md) | Kombinierte Schichtkürzel über zwei Tage | Angenommen, ergänzt 0002 |
 | [0014](0014-herkunft-und-pruefhinweis-an-schichten.md) | Herkunft, Änderungsverlauf und Prüfhinweis an Schichten; erneuter Import überschreibt | Angenommen |
+| [0015](0015-open-source-lizenzen-beim-build-erzeugen.md) | Open-Source-Lizenzen beim Build erzeugen und in der App anzeigen | Angenommen |

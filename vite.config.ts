@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
+import { thirdPartyLicenses } from './scripts/third-party-licenses.mjs'
 
 export default defineConfig({
   // Base-Pfad für GitHub Pages Project Site (https://<user>.github.io/shifthappens/)
@@ -10,9 +11,13 @@ export default defineConfig({
   },
   plugins: [
     vue(),
+    // Liste der Fremdbibliotheken mit Lizenztexten (licenses.json, ADR 0015)
+    thirdPartyLicenses(),
     VitePWA({
       registerType: 'autoUpdate',
       workbox: {
+        // auch licenses.json vorab laden, damit die Lizenzseite offline funktioniert
+        globPatterns: ['**/*.{js,wasm,css,html,json}'],
         // Texterkennung (mehrere MB) nicht vorab laden, sondern beim ersten Einsatz cachen
         globIgnores: ['**/tesseract/**'],
         runtimeCaching: [{
