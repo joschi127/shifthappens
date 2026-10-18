@@ -3,6 +3,9 @@
 Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
 ## [Unreleased]
+- **Einstellungen, alle Daten löschen:** Neuer Bereich „Zurücksetzen“ mit „Alle Daten und Einstellungen löschen“. Entfernt Schichten, Vorlagen, Einstellungen und die Google-Verbindung von diesem Gerät, nach zweistufiger Bestätigung und mit dem Angebot, vorher ein Backup zu exportieren.
+  - **Google Drive:** Ist Drive verbunden, fragt die App ausdrücklich, ob auch die Sicherung im Drive gelöscht werden soll (standardmäßig nicht). Schlägt das Löschen im Drive fehl, wird auf dem Gerät nichts gelöscht.
+  - **Ohne Verbindung:** Der Dialog erklärt, dass eine frühere Drive-Sicherung bestehen bleibt und wie man sie entfernt.
 - **Dienstplan-Import, Erklärung zu Schicht-Vorlagen:** standardmäßig zugeklappt (auch ohne Vorlagen mit Kürzel), Auf- und Zuklappen animiert; ohne Animation bei „Bewegung reduzieren“.
 - **Dienstplan-Import, Bereichsauswahl:** Abstand zum Bildschirmrand und grauer Rand um das Bild, damit Ecken am Bildrand mit dem Finger greifbar bleiben (auch in „Ganzes Bild zeigen“).
 - **Dienstplan-Import, Funde aus dem Browser-Test:**

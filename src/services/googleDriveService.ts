@@ -229,6 +229,25 @@ export function logoutFromGoogle() {
   localStorage.removeItem(USER_EMAIL_KEY);
 }
 
+/**
+ * Sicherung im Google Drive löschen: alle Dateien im App-Ordner (appDataFolder, nur für diese App sichtbar).
+ * Ohne gültiges Token wird zuerst neu angemeldet (Popup, daher nur nach einer Nutzeraktion aufrufen).
+ * Wirft bei Fehlern, damit der Aufrufer nichts Lokales löscht, solange die Cloud-Sicherung noch besteht.
+ */
+export async function deleteCloudBackup(): Promise<number> {
+  if (!getValidToken() && !(await loginToGoogle())) {
+    throw new Error('Google-Anmeldung abgebrochen oder fehlgeschlagen.');
+  }
+  const res = await driveFetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&fields=files(id)&pageSize=100');
+  if (!res.ok) throw new Error(`Drive-Dateiliste konnte nicht geladen werden (HTTP ${res.status})`);
+  const files: { id: string }[] = (await res.json()).files ?? [];
+  for (const file of files) {
+    const del = await driveFetch(`https://www.googleapis.com/drive/v3/files/${file.id}`, { method: 'DELETE' });
+    if (!del.ok && del.status !== 404) throw new Error(`Drive-Datei konnte nicht gelöscht werden (HTTP ${del.status})`);
+  }
+  return files.length;
+}
+
 // Find backup file in appDataFolder
 // Fehler werden geworfen statt als "keine Datei" gewertet, sonst würde eine zweite Backup-Datei angelegt
 async function findCloudFile(): Promise<{ id: string; modifiedTime: string } | null> {

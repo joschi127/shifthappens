@@ -146,6 +146,20 @@
 
       <ion-list :inset="true">
         <ion-list-header>
+          <ion-label>Zurücksetzen</ion-label>
+        </ion-list-header>
+
+        <ion-item button @click="handleDeleteAll">
+          <ion-icon slot="start" color="danger" :icon="trashOutline"></ion-icon>
+          <ion-label color="danger">
+            <h2>Alle Daten und Einstellungen löschen</h2>
+            <p>Entfernt Schichten, Vorlagen, Einstellungen und die Google-Verbindung von diesem Gerät.</p>
+          </ion-label>
+        </ion-item>
+      </ion-list>
+
+      <ion-list :inset="true">
+        <ion-list-header>
           <ion-label>Über die App</ion-label>
         </ion-list-header>
 
@@ -192,6 +206,7 @@ import {
   cloudDownloadOutline,
   cloudUploadOutline,
   documentTextOutline,
+  trashOutline,
   moon,
   sunny,
   syncOutline,
@@ -210,6 +225,7 @@ import {
   saveImportProfile
 } from '../services/importSettingsService';
 import { exportDatabase, importDatabase } from '../services/dbExportService';
+import { deleteAllLocalData } from '../services/resetService';
 import { isDarkMode, toggleDarkMode } from '../services/themeService';
 import {
   isConnected,
@@ -331,6 +347,67 @@ const handleExport = async () => {
       message: 'Export fehlgeschlagen.',
       duration: 2000,
       color: 'danger'
+    });
+    await toast.present();
+  }
+};
+
+// Alles löschen: zweistufig bestätigen, vorher Backup anbieten, danach App neu laden
+const handleDeleteAll = async () => {
+  // Mit Google Drive verbunden: ausdrücklich fragen, ob auch die Sicherung im Drive gelöscht werden soll
+  // (standardmäßig nicht, sie ist das Sicherheitsnetz für einen Neuanfang)
+  const connected = isConnected.value;
+  const first = await alertController.create({
+    header: 'Alle Daten löschen?',
+    message: connected
+      ? 'Alle Schichten, Schicht-Vorlagen und Einstellungen auf diesem Gerät werden endgültig gelöscht, die Verbindung '
+        + 'zu Google Drive wird getrennt. Die Sicherung in deinem Google Drive bleibt erhalten, außer du hakst unten das Löschen an. '
+        + 'Tipp: Exportiere vorher ein Backup.'
+      : 'Alle Schichten, Schicht-Vorlagen und Einstellungen auf diesem Gerät werden endgültig gelöscht. '
+        + 'Eine frühere Sicherung in Google Drive bleibt bestehen. Um auch sie zu löschen, verbinde dich vorher mit Google Drive '
+        + 'oder entferne den Zugriff von ShiftHappens in deinem Google-Konto. Tipp: Exportiere vorher ein Backup.',
+    inputs: connected
+      ? [{ type: 'checkbox', label: 'Auch die Sicherung in Google Drive löschen', value: 'cloud', checked: false }]
+      : [],
+    buttons: [
+      { text: 'Abbrechen', role: 'cancel' },
+      { text: 'Backup exportieren', role: 'backup' },
+      { text: 'Weiter', role: 'destructive', cssClass: 'alert-button-danger' }
+    ]
+  });
+  await first.present();
+  const { role, data } = await first.onDidDismiss();
+  if (role === 'backup') { await handleExport(); return; }
+  if (role !== 'destructive') return;
+  const includeCloud = connected && Array.isArray(data?.values) && data.values.includes('cloud');
+
+  const second = await alertController.create({
+    header: 'Wirklich alles löschen?',
+    message: includeCloud
+      ? 'Die Daten auf diesem Gerät und die Sicherung in Google Drive werden gelöscht. Das kann nicht rückgängig gemacht werden.'
+      : 'Das kann nicht rückgängig gemacht werden.',
+    buttons: [
+      { text: 'Abbrechen', role: 'cancel' },
+      { text: 'Endgültig löschen', role: 'destructive', cssClass: 'alert-button-danger' }
+    ]
+  });
+  await second.present();
+  if ((await second.onDidDismiss()).role !== 'destructive') return;
+
+  const loading = await loadingController.create({ message: 'Daten werden gelöscht …' });
+  await loading.present();
+  try {
+    await deleteAllLocalData({ includeCloud });
+    // Neu laden, damit alle Dienste mit leerem Zustand starten
+    window.location.replace(import.meta.env.BASE_URL);
+  } catch (error) {
+    console.error(error);
+    await loading.dismiss();
+    const toast = await toastController.create({
+      message: includeCloud
+        ? 'Die Sicherung in Google Drive konnte nicht gelöscht werden. Es wurde nichts gelöscht, bitte erneut versuchen.'
+        : 'Löschen fehlgeschlagen. Bitte erneut versuchen.',
+      duration: 4000, color: 'danger'
     });
     await toast.present();
   }

@@ -18,6 +18,8 @@ Ziel: Die lokal gespeicherten Daten gehen bei Gerätewechsel oder Datenverlust n
 | Anzeige von letzter Synchronisation und Richtung | ✅ |
 | Kalender-Abo (`.ics`) im regulären Drive mit Freigabelink | geplant (V2), siehe [PRD Kalender teilen](kalender-teilen.md) |
 
+- **Alle Daten löschen** (Einstellungen → Zurücksetzen): löscht IndexedDB und localStorage dieses Geräts nach zweistufiger Bestätigung; die Google-Verbindung wird vorher getrennt, damit kein leerer Stand hochgeladen wird. Bei bestehender Verbindung kann der Nutzer ausdrücklich wählen, auch die Sicherung im Drive (App-Ordner) zu löschen; standardmäßig bleibt sie erhalten und kommt beim nächsten Verbinden zurück. Schlägt das Löschen im Drive fehl, bleibt auf dem Gerät alles erhalten. Die gecachten App-Dateien (Service Worker) bleiben, sie enthalten keine persönlichen Daten.
+
 ## Regeln und Einschränkungen
 
 - **Ganzer Datenstand:** Synchronisiert wird immer der ganze Datenstand als eine Datei, nicht einzelne Einträge (siehe [ADR 0008](../adr/0008-sync-ueber-google-drive-appdata.md)).

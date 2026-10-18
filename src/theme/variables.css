@@ -273,3 +273,8 @@ html.dark.md {
 
   --ion-card-background: #1e1e1e;
 }
+
+/* Warnfarbe für endgültige Aktionen in Bestätigungsdialogen (z. B. „Endgültig löschen“) */
+ion-alert .alert-button-danger {
+  color: var(--ion-color-danger) !important;
+}
