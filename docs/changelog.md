@@ -3,6 +3,7 @@
 Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
 ## [Unreleased]
+- **Dienstplan-Import, Hinweise:** Fehlt der „Name im Dienstplan“ oder gibt es keine Vorlage mit Schichtkürzel, führen die Hinweise direkt zu den Einstellungen bzw. Schicht-Vorlagen; die Warnung erscheint jetzt auch, wenn Vorlagen ohne Kürzel existieren. Änderungen dort werden beim Zurückkehren übernommen.
 - **Dienstplan-Import, Erkennung mit Nachbarblöcken:** Die Blöcke direkt über und unter dem eigenen werden als zusätzliche Vergleichsmuster mit ausgewertet, übernommen wird weiterhin nur die eigene Zeile. Kopfzeilen und Legenden werden dabei erkannt und ignoriert. Der Regressionstest prüft diesen Modus zusätzlich.
 - **Dienstplan-Import, Seitenverhältnis:** Das gelernte Seitenverhältnis des Blocks wird nur noch übernommen, wenn es plausibel ist (Schutz vor verrutschten Ecken).
 - **Kalender, heller Modus:** Fehlende Graustufen-Variablen ergänzt; Rahmen, Wochentagszeile und gedimmte Texte im Kalender werden im hellen Modus wieder richtig dargestellt.

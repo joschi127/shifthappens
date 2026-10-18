@@ -31,10 +31,12 @@
         </ion-list>
 
         <ion-note v-if="!rosterNames.length" class="hint">
-          Tipp: Mit deinem „Name im Dienstplan“ (Einstellungen → Dienstplan-Import) findet die App deine Zeile automatisch.
+          Tipp: Mit deinem „Name im Dienstplan“ findet die App deine Zeile automatisch.
+          <router-link to="/settings">Jetzt in den Einstellungen eintragen</router-link>
         </ion-note>
-        <ion-note v-if="!templates.length" class="hint warning">
-          Es gibt noch keine Schicht-Vorlagen mit Schichtkürzeln. Lege zuerst Vorlagen an, z.B. „Frühdienst“ mit Kürzel „F01“.
+        <ion-note v-if="!templates.some(t => t.codes?.length)" class="hint warning">
+          Es gibt noch keine Schicht-Vorlagen mit Schichtkürzeln. Lege zuerst Vorlagen an, z. B. „Frühdienst“ mit Kürzel „F01“.
+          <router-link to="/shift-types">Zu den Schicht-Vorlagen</router-link>
         </ion-note>
 
         <ion-button expand="block" @click="cameraInput?.click()">
@@ -165,10 +167,10 @@
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonBackButton, IonButton, IonIcon,
   IonList, IonItem, IonLabel, IonNote, IonSelect, IonSelectOption, IonProgressBar, IonModal, IonCheckbox,
-  toastController, alertController
+  toastController, alertController, onIonViewWillEnter
 } from '@ionic/vue';
 import { cameraOutline, imageOutline, refreshOutline } from 'ionicons/icons';
-import { computed, onMounted, onUnmounted, ref, shallowRef } from 'vue';
+import { computed, onUnmounted, ref, shallowRef } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { db, ImportTemplate, ShiftType } from '../db';
 import RegionSelector from '../components/import/RegionSelector.vue';
@@ -222,7 +224,9 @@ const formats = ref<ImportTemplate[]>(IMPORT_FORMATS);
 const formatId = ref(IMPORT_FORMATS[0].id);
 const format = computed(() => formats.value.find(f => f.id === formatId.value) ?? IMPORT_FORMATS[0]);
 
-onMounted(async () => {
+// Bei jedem Betreten neu laden: Name und Vorlagen können zwischendurch in den Einstellungen geändert worden sein
+let formatChosen = false;
+onIonViewWillEnter(async () => {
   templates.value = await db.shiftTypes.orderBy('order').toArray();
   const profile = await getImportProfile();
   rosterNames.value = profile.rosterNames;
@@ -230,7 +234,8 @@ onMounted(async () => {
   const saved = await getImportTemplates();
   formats.value = mergeFormats(saved);
   const lastUsed = saved.find(s => s.lastUsed);
-  if (lastUsed) formatId.value = lastUsed.id;
+  if (lastUsed && !formatChosen) formatId.value = lastUsed.id;
+  formatChosen = true;
 });
 
 // Erkennung im Speicher wieder freigeben, wenn die Ansicht verlassen wird
@@ -283,7 +288,8 @@ const findOwnBlock = async (tryRotations = true) => {
   if (!image.value) return;
   if (!rosterNames.value.length) {
     corners.value = defaultCorners(image.value);
-    regionMessage.value = 'Ziehe die vier Ecken auf deinen Block: von der ersten bis zur letzten Tagesspalte, alle Zeilen deiner Person, ohne Namensspalte.';
+    regionMessage.value = 'Ziehe die vier Ecken auf deinen Block: von der ersten bis zur letzten Tagesspalte, alle Zeilen deiner Person, ohne Namensspalte. '
+      + 'Tipp: Trägst du in den Einstellungen deinen „Name im Dienstplan“ ein, sucht die App den Block künftig selbst.';
     return;
   }
   busy.value = true; busyText.value = 'Deine Zeile wird gesucht (beim ersten Mal werden die Erkennungsdaten geladen) …'; progress.value = null;
