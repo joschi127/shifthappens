@@ -1,6 +1,6 @@
 # 0008: Synchronisation über den Google-Drive-Anwendungsordner
 
-- **Status:** Angenommen. Nachträglich dokumentiert, Entscheidung bereits umgesetzt.
+- **Status:** Angenommen, ergänzt durch [ADR 0010](0010-google-token-mit-ablaufzeit-speichern.md) (Token-Speicherung). Nachträglich dokumentiert, Entscheidung bereits umgesetzt.
 - **Datum der Entscheidung:** 01.08.2026 (Grundimplementierung Google Drive Sync)
 
 ## Kontext

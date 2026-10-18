@@ -79,8 +79,11 @@
           <ion-icon slot="start" :icon="cloudDownloadOutline"></ion-icon>
           <ion-label>
             <h2>Verbindungsstatus</h2>
-            <p>{{ isConnected ? `Verbunden als ${userEmail}` : 'Nicht verbunden' }}</p>
+            <p>{{ connectionStatus }}</p>
           </ion-label>
+          <ion-button v-if="isConnected && needsReauth" slot="end" color="warning" size="small" @click="reconnectAndSync">
+            Anmelden
+          </ion-button>
           <ion-button slot="end" :color="isConnected ? 'danger' : 'primary'" size="small" @click="handleGoogleAuth">
             {{ isConnected ? 'Trennen' : 'Verbinden' }}
           </ion-button>
@@ -179,7 +182,7 @@ import {
   refreshOutline,
   pricetagsOutline
 } from 'ionicons/icons';
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { liveQuery, Subscription } from 'dexie';
 import { db, ImportProfile } from '../db';
 import TagListInput from '../components/TagListInput.vue';
@@ -194,6 +197,7 @@ import { exportDatabase, importDatabase } from '../services/dbExportService';
 import { isDarkMode, toggleDarkMode } from '../services/themeService';
 import {
   isConnected,
+  needsReauth,
   userEmail,
   autoSyncEnabled,
   lastSyncTime,
@@ -201,8 +205,15 @@ import {
   setAutoSync,
   loginToGoogle,
   logoutFromGoogle,
+  reconnectAndSync,
   syncNow
 } from '../services/googleDriveService';
+
+const connectionStatus = computed(() => {
+  if (!isConnected.value) return 'Nicht verbunden';
+  if (needsReauth.value) return `Anmeldung abgelaufen (${userEmail.value}). Der automatische Sync ist pausiert.`;
+  return `Verbunden als ${userEmail.value}`;
+});
 
 const fileInput = ref<HTMLInputElement | null>(null);
 

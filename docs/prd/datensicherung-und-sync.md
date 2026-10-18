@@ -13,13 +13,14 @@ Ziel: Die lokal gespeicherten Daten gehen bei Gerätewechsel oder Datenverlust n
 | Mit Google Drive verbinden und trennen, Anzeige des verbundenen Kontos | ✅ |
 | Manueller Sync in den versteckten Anwendungsordner (`appDataFolder`) | ✅ |
 | Konflikterkennung (lokal und Cloud geändert) mit Auswahl „Cloud-Stand“ oder „Lokalen Stand“ | ✅ |
-| Automatischer Sync alle 15 Minuten (optional) | ✅ mit Einschränkung, siehe unten |
+| Automatischer Sync beim App-Start und alle 15 Minuten (optional) | ✅ |
+| Hinweis mit „Anmelden“, wenn die Google-Anmeldung abgelaufen ist | ✅ |
 | Anzeige von letzter Synchronisation und Richtung | ✅ |
-| Kalender-Abo (`.ics`) im regulären Drive mit Freigabelink | geplant (V2) |
+| Kalender-Abo (`.ics`) im regulären Drive mit Freigabelink | geplant (V2), siehe [PRD Kalender teilen](kalender-teilen.md) |
 
 ## Regeln und Einschränkungen
 
 - **Ganzer Datenstand:** Synchronisiert wird immer der ganze Datenstand als eine Datei, nicht einzelne Einträge (siehe [ADR 0008](../adr/0008-sync-ueber-google-drive-appdata.md)).
 - **Konflikte beim automatischen Sync:** Der neuere Stand gewinnt vollständig, Änderungen der anderen Seite gehen dabei verloren.
-- **Bekannte Einschränkung:** Das Zugriffstoken liegt nur im Arbeitsspeicher. Nach einem Neuladen der App läuft der automatische Sync erst wieder, wenn einmal manuell synchronisiert oder neu verbunden wurde.
+- **Anmeldung:** Das Zugriffstoken gilt rund eine Stunde und übersteht ein Neuladen der App. Danach ist ein Tipp auf „Anmelden“ nötig, weil Google im Browser keine stille Erneuerung erlaubt (siehe [ADR 0010](../adr/0010-google-token-mit-ablaufzeit-speichern.md)).
 - **Datenschutz:** Google sieht nur die Backup-Datei im Anwendungsordner. Die App fordert keinen Zugriff auf andere Drive-Dateien an.

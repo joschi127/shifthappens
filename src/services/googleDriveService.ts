@@ -10,6 +10,12 @@ const LAST_SYNC_DIR_KEY = 'google_last_sync_dir';
 const LOCAL_MODIFIED_KEY = 'shifthappens_local_modified';
 const CONNECTED_KEY = 'google_connected';
 const USER_EMAIL_KEY = 'google_user_email';
+const ACCESS_TOKEN_KEY = 'google_access_token';
+const TOKEN_EXPIRES_AT_KEY = 'google_access_token_expires_at';
+
+// Token etwas früher als abgelaufen behandeln, damit es nicht mitten im Sync ungültig wird
+const TOKEN_EXPIRY_BUFFER_MS = 60 * 1000;
+const AUTO_SYNC_INTERVAL_MS = 15 * 60 * 1000;
 
 const envClientId = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID || '';
 export const clientId = ref(localStorage.getItem(CLIENT_ID_KEY) || envClientId);
@@ -20,10 +26,65 @@ const rawLastSync = localStorage.getItem(LAST_SYNC_TIME_KEY) || '';
 const formattedLastSync = rawLastSync.includes('T') ? new Date(rawLastSync).toLocaleString('de-DE') : rawLastSync;
 export const lastSyncTime = ref(formattedLastSync);
 export const lastSyncDirection = ref(localStorage.getItem(LAST_SYNC_DIR_KEY) || 'Noch nicht synchronisiert');
+// Verbunden, aber ohne gültiges Zugriffstoken: Google erlaubt die Erneuerung nur nach einer Nutzeraktion (Popup)
+export const needsReauth = ref(false);
 
 let tokenClient: any = null;
-let accessToken: string | null = null;
+let tokenErrorHandler: ((error: any) => void) | null = null;
 let autoSyncInterval: any = null;
+let reauthHintShown = false;
+
+class AuthExpiredError extends Error {
+  constructor() {
+    super('Google-Zugriffstoken fehlt oder ist abgelaufen');
+  }
+}
+
+/**
+ * Das Zugriffstoken wird mit Ablaufzeit gespeichert, damit die Verbindung ein Neuladen
+ * der App übersteht. Es ist auf den versteckten App-Ordner und die E-Mail-Adresse beschränkt
+ * und läuft nach ca. einer Stunde ab.
+ */
+function storeToken(response: any) {
+  const expiresInMs = Number(response.expires_in || 3600) * 1000;
+  localStorage.setItem(ACCESS_TOKEN_KEY, response.access_token);
+  localStorage.setItem(TOKEN_EXPIRES_AT_KEY, String(Date.now() + expiresInMs - TOKEN_EXPIRY_BUFFER_MS));
+  needsReauth.value = false;
+  reauthHintShown = false;
+}
+
+function clearToken() {
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(TOKEN_EXPIRES_AT_KEY);
+}
+
+function getValidToken(): string | null {
+  const token = localStorage.getItem(ACCESS_TOKEN_KEY);
+  const expiresAt = Number(localStorage.getItem(TOKEN_EXPIRES_AT_KEY) || 0);
+  if (token && expiresAt > Date.now()) {
+    return token;
+  }
+  clearToken();
+  needsReauth.value = isConnected.value;
+  return null;
+}
+
+async function driveFetch(url: string, init: RequestInit = {}): Promise<Response> {
+  const token = getValidToken();
+  if (!token) {
+    throw new AuthExpiredError();
+  }
+  const res = await fetch(url, {
+    ...init,
+    headers: { ...init.headers, Authorization: `Bearer ${token}` }
+  });
+  if (res.status === 401) {
+    clearToken();
+    needsReauth.value = isConnected.value;
+    throw new AuthExpiredError();
+  }
+  return res;
+}
 
 export function setClientId(id: string) {
   clientId.value = id.trim();
@@ -66,12 +127,17 @@ export async function initGoogleAuth(): Promise<boolean> {
             localStorage.removeItem(USER_EMAIL_KEY);
             resolve(false);
           } else {
-            accessToken = response.access_token;
+            storeToken(response);
             isConnected.value = true;
             localStorage.setItem(CONNECTED_KEY, 'true');
             await fetchUserInfo();
             resolve(true);
           }
+        },
+        // z. B. Popup geschlossen oder blockiert
+        error_callback: (error: any) => {
+          console.warn('Google auth popup error:', error);
+          tokenErrorHandler?.(error);
         },
       });
       resolve(true);
@@ -83,11 +149,8 @@ export async function initGoogleAuth(): Promise<boolean> {
 }
 
 async function fetchUserInfo() {
-  if (!accessToken) return;
   try {
-    const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-      headers: { Authorization: `Bearer ${accessToken}` }
-    });
+    const res = await driveFetch('https://www.googleapis.com/oauth2/v3/userinfo');
     if (res.ok) {
       const data = await res.json();
       userEmail.value = data.email || data.name || 'Google Nutzer';
@@ -122,6 +185,7 @@ export async function loginToGoogle(promptConsent = false): Promise<boolean> {
 
   return new Promise((resolve) => {
     // Override or trigger request
+    tokenErrorHandler = () => resolve(false);
     tokenClient.callback = async (response: any) => {
       if (response.error) {
         console.error('Login error:', response);
@@ -130,7 +194,7 @@ export async function loginToGoogle(promptConsent = false): Promise<boolean> {
         localStorage.removeItem(USER_EMAIL_KEY);
         resolve(false);
       } else {
-        accessToken = response.access_token;
+        storeToken(response);
         isConnected.value = true;
         localStorage.setItem(CONNECTED_KEY, 'true');
         await fetchUserInfo();
@@ -142,13 +206,22 @@ export async function loginToGoogle(promptConsent = false): Promise<boolean> {
       options.prompt = 'consent';
     } else {
       options.prompt = '';
+      // Bei erneuter Anmeldung das bekannte Konto vorschlagen, damit keine Kontoauswahl nötig ist
+      if (userEmail.value.includes('@')) {
+        options.login_hint = userEmail.value;
+      }
     }
     tokenClient.requestAccessToken(options);
   });
 }
 
 export function logoutFromGoogle() {
-  accessToken = null;
+  const token = localStorage.getItem(ACCESS_TOKEN_KEY);
+  if (token && (window as any).google?.accounts?.oauth2) {
+    (window as any).google.accounts.oauth2.revoke(token, () => {});
+  }
+  clearToken();
+  needsReauth.value = false;
   isConnected.value = false;
   userEmail.value = '';
   stopAutoSyncTimer();
@@ -157,38 +230,32 @@ export function logoutFromGoogle() {
 }
 
 // Find backup file in appDataFolder
+// Fehler werden geworfen statt als "keine Datei" gewertet, sonst würde eine zweite Backup-Datei angelegt
 async function findCloudFile(): Promise<{ id: string; modifiedTime: string } | null> {
-  if (!accessToken) return null;
-  try {
-    const query = encodeURIComponent("name = 'shifthappens_backup.json' and trashed = false");
-    const res = await fetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${query}&fields=files(id,name,modifiedTime)`, {
-      headers: { Authorization: `Bearer ${accessToken}` }
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (data.files && data.files.length > 0) {
-      return {
-        id: data.files[0].id,
-        modifiedTime: data.files[0].modifiedTime
-      };
-    }
-  } catch (e) {
-    console.error('Error finding cloud file:', e);
+  const query = encodeURIComponent("name = 'shifthappens_backup.json' and trashed = false");
+  const res = await driveFetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${query}&fields=files(id,name,modifiedTime)`);
+  if (!res.ok) {
+    throw new Error(`Drive-Dateiliste konnte nicht geladen werden (HTTP ${res.status})`);
+  }
+  const data = await res.json();
+  if (data.files && data.files.length > 0) {
+    return {
+      id: data.files[0].id,
+      modifiedTime: data.files[0].modifiedTime
+    };
   }
   return null;
 }
 
 // Download cloud backup content and metadata
 async function downloadCloudBackup(fileId: string): Promise<{ data: any; modifiedTime: string } | null> {
-  if (!accessToken) return null;
   try {
-    const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-      headers: { Authorization: `Bearer ${accessToken}` }
-    });
+    const res = await driveFetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`);
     if (!res.ok) return null;
     const json = await res.json();
     return { data: json, modifiedTime: json.timestamp || new Date().toISOString() };
   } catch (e) {
+    if (e instanceof AuthExpiredError) throw e;
     console.error('Error downloading cloud backup:', e);
     return null;
   }
@@ -196,7 +263,6 @@ async function downloadCloudBackup(fileId: string): Promise<{ data: any; modifie
 
 // Upload backup to cloud
 async function uploadToCloud(fileId: string | null, jsonString: string): Promise<boolean> {
-  if (!accessToken) return false;
   try {
     const metadata = {
       name: 'shifthappens_backup.json',
@@ -212,14 +278,11 @@ async function uploadToCloud(fileId: string | null, jsonString: string): Promise
       : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
     const method = fileId ? 'PATCH' : 'POST';
 
-    const res = await fetch(url, {
-      method,
-      headers: { Authorization: `Bearer ${accessToken}` },
-      body: form
-    });
+    const res = await driveFetch(url, { method, body: form });
 
     return res.ok;
   } catch (e) {
+    if (e instanceof AuthExpiredError) throw e;
     console.error('Error uploading to cloud:', e);
     return false;
   }
@@ -269,12 +332,15 @@ function updateSyncStatus(direction: string) {
 }
 
 export async function syncNow(manual = true): Promise<{ success: boolean; message: string }> {
-  if (!isConnected.value || !accessToken) {
+  if (!isConnected.value || !getValidToken()) {
     if (manual) {
       const loggedIn = await loginToGoogle();
       if (!loggedIn) return { success: false, message: 'Nicht mit Google verbunden.' };
     } else {
-      return { success: false, message: 'Nicht mit Google verbunden.' };
+      return {
+        success: false,
+        message: isConnected.value ? 'Google-Anmeldung abgelaufen. Bitte erneut anmelden.' : 'Nicht mit Google verbunden.'
+      };
     }
   }
 
@@ -393,19 +459,52 @@ export async function syncNow(manual = true): Promise<{ success: boolean; messag
     }
 
   } catch (error) {
+    if (error instanceof AuthExpiredError) {
+      return { success: false, message: 'Google-Anmeldung abgelaufen. Bitte erneut anmelden.' };
+    }
     console.error('Sync error:', error);
     return { success: false, message: 'Synchronisationsfehler aufgetreten.' };
   }
 }
 
+async function runAutoSync() {
+  if (!autoSyncEnabled.value || !isConnected.value) return;
+  await syncNow(false);
+  if (needsReauth.value) {
+    await showReauthHint();
+  }
+}
+
+// Einmal pro Sitzung: Der Tipp auf "Anmelden" ist die Nutzeraktion, die Google für das Popup verlangt
+async function showReauthHint() {
+  if (reauthHintShown) return;
+  reauthHintShown = true;
+  const toast = await toastController.create({
+    message: 'Google-Anmeldung abgelaufen. Der automatische Sync ist pausiert.',
+    duration: 10000,
+    color: 'warning',
+    buttons: [
+      { text: 'Anmelden', handler: () => { reconnectAndSync(); } },
+      { text: 'Später', role: 'cancel' }
+    ]
+  });
+  await toast.present();
+}
+
+export async function reconnectAndSync(): Promise<void> {
+  if (!(await loginToGoogle())) return;
+  const result = await syncNow(true);
+  const toast = await toastController.create({
+    message: result.message,
+    duration: 3000,
+    color: result.success ? 'success' : 'danger'
+  });
+  await toast.present();
+}
+
 function startAutoSyncTimer() {
   stopAutoSyncTimer();
-  // Check every 15 minutes if connected and auto-sync enabled
-  autoSyncInterval = setInterval(async () => {
-    if (autoSyncEnabled.value && isConnected.value) {
-      await syncNow(false);
-    }
-  }, 15 * 60 * 1000);
+  autoSyncInterval = setInterval(runAutoSync, AUTO_SYNC_INTERVAL_MS);
 }
 
 function stopAutoSyncTimer() {
@@ -415,11 +514,17 @@ function stopAutoSyncTimer() {
   }
 }
 
-// Initial auto-sync startup if enabled
-if (autoSyncEnabled.value) {
-  startAutoSyncTimer();
-}
-
-if (isConnected.value) {
-  initGoogleAuth();
+/**
+ * Wird nach dem Mounten der App aufgerufen (main.ts), damit Toasts angezeigt werden können.
+ * Synchronisiert beim Start sofort, statt erst nach dem ersten Intervall.
+ */
+export function initGoogleSync() {
+  if (isConnected.value) {
+    initGoogleAuth();
+    getValidToken();
+  }
+  if (autoSyncEnabled.value) {
+    startAutoSyncTimer();
+    runAutoSync();
+  }
 }

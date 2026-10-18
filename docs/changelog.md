@@ -3,7 +3,14 @@
 Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
 ## [Unreleased]
+- **Synchronisation (Google Drive):**
+  - Bugfix: Nach dem Neuladen bzw. Neustart der App lief der automatische Sync still ins Leere, weil das Zugriffstoken nur im Arbeitsspeicher lag, während die Einstellungen weiterhin „Verbunden“ anzeigten. Das Token wird nun mit Ablaufzeit gespeichert (ADR 0010), der automatische Sync läuft direkt beim App-Start, und eine abgelaufene Anmeldung wird in den Einstellungen sowie einmal pro Sitzung per Hinweis mit „Anmelden“-Knopf angezeigt (erneute Anmeldung ohne Kontoauswahl über `login_hint`).
+  - Bugfix: Ein Fehler beim Abrufen der Cloud-Dateiliste wurde als „keine Datei vorhanden“ gewertet, wodurch eine zweite Backup-Datei hätte angelegt werden können. Abgelaufene Tokens (HTTP 401) werden nun erkannt.
+  - Bugfix: Wurde das Google-Anmeldefenster geschlossen, blieb der Ladedialog des manuellen Syncs hängen.
+  - Beim Trennen wird das Zugriffstoken bei Google widerrufen.
 - **Dokumentation:**
+  - Roadmap: Google Drive Sync und Dienstplan-Import als „in Arbeit“ markiert (Backup & Sync umgesetzt, Kalender-Abo offen); Rufbereitschaft, Smart-Checkout und Statistiken aus V2 ins Ideen-Backlog verschoben.
+  - PRD „Kalender teilen (ICS-Abo)“ und ADR 0011 (ICS-Datei mit öffentlichem Link im Google Drive, Status: vorgeschlagen, PoC ausstehend) angelegt.
   - Bestehende Funktionen nachträglich als PRDs dokumentiert (`docs/prd/`: Schicht-Vorlagen, Kalender, Datensicherung und Synchronisation), inkl. Abgleich mit dem tatsächlichen Stand im Code (z. B. Wochen-/Agenda-Ansicht, Schnelleingabe und Notizen noch offen).
   - Bisherige Architekturentscheidungen nachträglich als ADR 0004–0009 dokumentiert (Tech-Stack, Offline First, Kopie der Vorlagenwerte, Zeit-/Datumsformat, Drive-Sync, Hosting & Konfiguration), jeweils mit bekannten Einschränkungen. Übersichten in `docs/adr/README.md` und `docs/prd/README.md`.
 - **Dienstplan-Import (Vorbereitung, Schritt 1):**

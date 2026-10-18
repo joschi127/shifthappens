@@ -11,5 +11,7 @@ Format und Regeln: siehe [Guidelines](../guidelines.md#anforderungen--architektu
 | [0005](0005-offline-first-ohne-backend.md) | Offline First: alle Daten lokal in IndexedDB, kein Backend | Angenommen (nachträglich) |
 | [0006](0006-schicht-kopiert-werte-der-vorlage.md) | Eine Schicht kopiert die Werte ihrer Vorlage | Angenommen (nachträglich) |
 | [0007](0007-zeiten-und-datum-als-strings.md) | Uhrzeiten und Datum als Strings ohne Zeitzone | Angenommen (nachträglich) |
-| [0008](0008-sync-ueber-google-drive-appdata.md) | Synchronisation über den Google-Drive-Anwendungsordner | Angenommen (nachträglich) |
+| [0008](0008-sync-ueber-google-drive-appdata.md) | Synchronisation über den Google-Drive-Anwendungsordner | Angenommen (nachträglich), ergänzt durch 0010 |
 | [0009](0009-hosting-github-pages-und-konfiguration.md) | Hosting auf GitHub Pages und Konfiguration über Umgebungsvariablen | Angenommen (nachträglich) |
+| [0010](0010-google-token-mit-ablaufzeit-speichern.md) | Google-Zugriffstoken mit Ablaufzeit lokal speichern | Angenommen, ergänzt 0008 |
+| [0011](0011-kalender-teilen-per-ics-im-drive.md) | Kalender teilen per ICS-Datei mit öffentlichem Link im Google Drive | Vorgeschlagen (PoC ausstehend) |

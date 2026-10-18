@@ -34,21 +34,21 @@ Der Fokus liegt auf der soliden Grundfunktionalität für die Verwaltung persön
 Erweiterung um intelligente Features und Exporte.
 
 ### Geplante Features
-- **Google Drive Synchronisation & Kalender-Sharing:**
+- **Google Drive Synchronisation & Kalender-Sharing** *(in Arbeit)*:
   *Entscheidung: Google Drive wurde als primäre Cloud-Lösung gewählt (Vorteile gegenüber iCloud: Kostenlos für Entwickler, plattformübergreifend für Android/iOS/Web und einfache Freigabe von `.ics`-Dateien).*
-  - **Backup & Sync:** Serverlose Synchronisation der App-Daten über das versteckte Google Drive Anwendungsdatenverzeichnis (`appDataFolder`).
-  - **Kalender-Abonnement (.ics):** Generierung einer iCalendar-Datei (`.ics`) im regulären Google Drive des Nutzers mit öffentlichem Freigabelink zur Einbindung in Outlook, Apple Calendar oder Google Calendar. Automatische Neuerstellung bei Datenänderungen.
-- **Dienstplan-Import per Foto/PDF:** Papier- oder PDF-Dienstplan fotografieren bzw. hochladen; die App erkennt nur die eigene Zeile und trägt die Schichten nach Bestätigung ein. Anforderungen: [PRD](prd/dienstplan-import.md), Entscheidungen: [ADRs](adr/).
-- **Rufbereitschaft:** Möglichkeit spezielle Rufbereitschafts-Schichten anzulegen.
-- **Smart-Checkout:** Automatisches Erkennen des Schichtendes über den Gerätestandort beim Verlassen des Arbeitsortes (Heimweg-Erkennung).
+  - **Backup & Sync** *(umgesetzt)*: Serverlose Synchronisation der App-Daten über das versteckte Google Drive Anwendungsdatenverzeichnis (`appDataFolder`). Siehe [PRD](prd/datensicherung-und-sync.md), [ADR 0008](adr/0008-sync-ueber-google-drive-appdata.md).
+  - **Kalender-Abonnement (.ics)** *(offen)*: Generierung einer iCalendar-Datei (`.ics`) im regulären Google Drive des Nutzers mit öffentlichem Freigabelink zur Einbindung in Outlook, Apple Calendar oder Google Calendar. Automatische Neuerstellung bei Datenänderungen. Siehe [PRD](prd/kalender-teilen.md), [ADR 0011](adr/0011-kalender-teilen-per-ics-im-drive.md) (PoC ausstehend).
+- **Dienstplan-Import per Foto/PDF** *(in Arbeit)*: Papier- oder PDF-Dienstplan fotografieren bzw. hochladen; die App erkennt nur die eigene Zeile und trägt die Schichten nach Bestätigung ein. Anforderungen: [PRD](prd/dienstplan-import.md), Entscheidungen: [ADRs](adr/).
 - **Export-Funktionen:** Export des Plans als PDF oder Text für Messenger-Dienste.
-- **Statistiken:** Auswertung von Arbeitszeiten und Schichtverteilungen.
 
 ---
 
 ## Ideen-Backlog (Zukunftsmusik)
 Hier werden Ideen gesammelt, deren Umsetzung noch nicht feststeht, die aber Potenzial für die Zukunft haben.
 
+- **Rufbereitschaft:** Möglichkeit spezielle Rufbereitschafts-Schichten anzulegen.
+- **Smart-Checkout:** Automatisches Erkennen des Schichtendes über den Gerätestandort beim Verlassen des Arbeitsortes (Heimweg-Erkennung).
+- **Statistiken:** Auswertung von Arbeitszeiten und Schichtverteilungen.
 - **Schicht-Termine:** Möglichkeit, während einer Schicht spezifische Termine zu hinterlegen (z.B. "15:00 Uhr Gespräch mit Frau Z.").
 - **Schicht-Aufgaben:** Festhalten von Aufgaben, die innerhalb einer Schicht erledigt werden müssen (z.B. "Anruf bei Amt XY").
 - **Mini-Game:** Moorhuhn-ähnliches Mini-Game, um Wartezeiten zu überbrücken.

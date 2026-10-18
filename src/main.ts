@@ -36,6 +36,7 @@ import './theme/variables.css';
 
 // Initialize Theme
 import { applyTheme } from './services/themeService';
+import { initGoogleSync } from './services/googleDriveService';
 applyTheme();
 
 const app = createApp(App)
@@ -44,4 +45,5 @@ const app = createApp(App)
 
 router.isReady().then(() => {
   app.mount('#app');
+  initGoogleSync();
 });

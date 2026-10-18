@@ -21,7 +21,8 @@ Ziel: Schnelle Übersicht über die eigenen Schichten eines Monats und einfaches
 | Agenda-Ansicht | offen (V1 laut Roadmap) |
 | Schnelleingabe für wiederkehrende Schichtfolgen | offen (V1 laut Roadmap) |
 | Dienstplan-Import per Foto/PDF | in Arbeit, siehe [PRD](dienstplan-import.md) |
-| Statistiken, Export als PDF oder Text | geplant (V2) |
+| Export als PDF oder Text | geplant (V2) |
+| Statistiken | Idee (Backlog) |
 
 ## Rahmen
 
