@@ -22,6 +22,7 @@ Alle abonnieren **denselben Link**.
 ## Inhalt der Termine
 
 - **Nur Schichtname und Zeiten.** Notizen werden nie geteilt.
+- **Abwesenheiten** (z. B. Urlaub, [ADR 0012](../adr/0012-abwesenheiten-als-vorlagen-art.md)) erscheinen als ganztägige Termine mit dem Namen der Vorlage. Sie sind im geteilten Kalender sichtbar.
 - **Ein Termin pro Schicht**, Titel = Schichtname.
   - **Zeitspanne:** vom Beginn bis zum Ende inklusive anschließender Nachtbereitschaft, damit erkennbar ist, wann man weg ist.
   - **Geteilte Schicht:** Der zweite Teil wird ein eigener Termin, damit die Lücke dazwischen sichtbar bleibt.

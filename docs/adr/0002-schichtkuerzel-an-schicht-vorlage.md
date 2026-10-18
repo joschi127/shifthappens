@@ -1,6 +1,6 @@
 # 0002: Schichtkürzel werden an der Schicht-Vorlage gespeichert
 
-- **Status:** Angenommen
+- **Status:** Angenommen, ergänzt durch [ADR 0013](0013-kombinierte-schichtkuerzel-ueber-zwei-tage.md) (Kombinationen über zwei Tage)
 - **Datum:** 18.10.2026
 - **Feature:** [Dienstplan-Import](../prd/dienstplan-import.md)
 

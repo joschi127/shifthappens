@@ -1,6 +1,6 @@
 # 0007: Uhrzeiten und Datum als Strings ohne Zeitzone
 
-- **Status:** Angenommen. Nachträglich dokumentiert, Entscheidung bereits umgesetzt.
+- **Status:** Angenommen, ergänzt durch [ADR 0013](0013-kombinierte-schichtkuerzel-ueber-zwei-tage.md) (Tageszuordnung der Teile einer Schicht). Nachträglich dokumentiert, Entscheidung bereits umgesetzt.
 - **Datum der Entscheidung:** 24.04.2026 (Initial Commit)
 
 ## Kontext

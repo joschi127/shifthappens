@@ -17,6 +17,7 @@ Ziel: Wiederkehrende Schichten werden einmal als Vorlage definiert und lassen si
 | Reihenfolge per Drag & Drop. Bei der Einführung der Sortierung wurden bestehende Vorlagen einmalig nach Beginn und Ende sortiert. | ✅ |
 | Löschen (Liste und Bearbeitungsansicht, mit Sicherheitsabfrage) | ✅ |
 | Schichtkürzel im Dienstplan für den [Dienstplan-Import](dienstplan-import.md) | ✅ |
+| Vorlagen-Art „Abwesenheit“ (z. B. Urlaub, Fortbildung, krank): ganztägig, ohne Zeiten, keine Arbeitszeit ([ADR 0012](../adr/0012-abwesenheiten-als-vorlagen-art.md)) | geplant |
 | Rufbereitschafts-Schichten | Idee (Backlog) |
 
 ## Regeln

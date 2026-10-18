@@ -63,6 +63,12 @@ browserconfig.xml
 !/.aider.conf.yml
 !/.aider.conventions.md
 
-# Temporäre Eingabedateien (z. B. Beispiel-Dienstpläne), nur .gitkeep wird eingecheckt
+# temp/: kurzlebige Arbeitsdateien (z. B. gerade übergebene Bilder), dürfen jederzeit gelöscht werden.
+# Nur .gitkeep wird eingecheckt, damit der Ordner existiert.
 /temp/*
 !/temp/.gitkeep
+
+# local/: dauerhaft aufzubewahrende, aber private Daten (z. B. echte Dienstpläne als Testdaten).
+# Werden wiederholt genutzt, dürfen aber nie ins Git. Nur .gitkeep wird eingecheckt.
+/local/*
+!/local/.gitkeep

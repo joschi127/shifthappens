@@ -1,0 +1,73 @@
+{
+  "beschreibung": "Variante 4: derselbe Plan wie Variante 3 mit zwei handschriftlichen Korrekturen (sauberes Bild und Foto); das Foto enthält zusätzlich handschriftliche Notizen im Kopf. Die gedruckten Werte entsprechen variante-3.erwartet.json.",
+  "basis": "variante-3",
+  "dateien": [
+    "variante-4-sauber.png",
+    "variante-4-foto.jpg"
+  ],
+  "handschrift": [
+    {
+      "art": "korrektur",
+      "name": "Kessler, Mira",
+      "tag": 12,
+      "gedruckt": "M05",
+      "durchgestrichen": true,
+      "zeitenDurchgestrichen": true,
+      "ersatz": null,
+      "dateien": [
+        "variante-4-sauber.png",
+        "variante-4-foto.jpg"
+      ],
+      "hinweis": "Dienst ersatzlos gestrichen"
+    },
+    {
+      "art": "korrektur",
+      "name": "Albrecht, Jonas",
+      "tag": 5,
+      "gedruckt": "M05",
+      "durchgestrichen": true,
+      "zeitenDurchgestrichen": true,
+      "ersatz": "S",
+      "ersatzPosition": "S-Zeile unter dem gestrichenen Dienst",
+      "dateien": [
+        "variante-4-sauber.png",
+        "variante-4-foto.jpg"
+      ],
+      "hinweis": "Dienst durch handschriftliches „S“ ersetzt; im Team steht „S“ für den Standard-Spätdienst",
+      "erwarteteAufloesung": "S04"
+    },
+    {
+      "art": "notiz",
+      "text": "November",
+      "position": "Kopf, über dem Planbereich",
+      "dateien": [
+        "variante-4-foto.jpg"
+      ]
+    },
+    {
+      "art": "notiz",
+      "text": "Gruppe A",
+      "unsicher": true,
+      "position": "Kopf, klein vor „SoWo BW Lindenhaus“",
+      "dateien": [
+        "variante-4-foto.jpg"
+      ]
+    },
+    {
+      "art": "notiz",
+      "text": "Feiertag",
+      "position": "Kopf, über dem Ende des Planungszeitraums",
+      "dateien": [
+        "variante-4-foto.jpg"
+      ]
+    },
+    {
+      "art": "notiz",
+      "text": "#3",
+      "position": "Kopf, über dem Planstatus",
+      "dateien": [
+        "variante-4-foto.jpg"
+      ]
+    }
+  ]
+}

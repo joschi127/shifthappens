@@ -23,6 +23,12 @@
 - Styling: Ionic CSS Utilities und Scoped CSS in Vue-Komponenten.
 - Datenhaltung: Dexie.js für lokale Speicherung; Datenmodellierung erfolgt zentral.
 
+## Lokale Ordner `temp/` und `local/`
+Beide Ordner werden **nicht** eingecheckt (außer jeweils einer `.gitkeep`, siehe `.gitignore`).
+- **`temp/`** – kurzlebige Arbeitsdateien, z. B. Bilder, die zur Analyse übergeben werden. Inhalte dürfen jederzeit gelöscht werden. Was dauerhaft gebraucht wird, wird nach `docs/` (öffentliche Beispiele) oder `local/` (private Daten) übernommen.
+- **`local/`** – dauerhaft aufzubewahrende **private** Daten, die wiederholt genutzt werden, aber nie ins Git oder in die Doku gehören. Beispiel: echte Dienstpläne mit erwarteten Werten als Testdaten für die Texterkennung (`local/dienstplaene/`).
+- Aus Daten in `local/` werden in Doku, ADRs und Changelog nur **anonyme Kennzahlen** übernommen, keine Namen oder Inhalte. Auch Zwischenergebnisse von Skripten (z. B. Zellausschnitte) landen nur in `local/` oder `temp/`.
+
 ## Umgebungsvariablen & Secrets
 - **`.env` wird ins Git eingecheckt** und darf **niemals** Secrets, Passwörter oder Client-IDs enthalten – nur nicht-geheime Standard-/Platzhalterwerte.
 - **Geheime bzw. lokale Werte** (z. B. konkrete Google-Client-IDs, Tokens) gehören ausschließlich in `.env.local`. Diese Datei steht in `.gitignore` und wird **nicht** eingecheckt.

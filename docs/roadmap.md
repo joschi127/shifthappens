@@ -46,6 +46,7 @@ Erweiterung um intelligente Features und Exporte.
 ## Ideen-Backlog (Zukunftsmusik)
 Hier werden Ideen gesammelt, deren Umsetzung noch nicht feststeht, die aber Potenzial für die Zukunft haben.
 
+- **Schicht-Vorlagen automatisch aus Foto anlegen:** Knopf „Automatisch aus Foto anlegen“ mit Kamera-Symbol bei den Schicht-Vorlagen. Erkennt Kürzel (und, falls vorhanden, Legende oder Uhrzeiten) aus einem Dienstplan und schlägt daraus Vorlagen samt Schichtkürzeln vor. Startet man im Kalender den Foto-Import, ohne dass Vorlagen existieren, wird direkt dorthin verwiesen. Baut auf dem [Dienstplan-Import](prd/dienstplan-import.md) auf.
 - **Rufbereitschaft:** Möglichkeit spezielle Rufbereitschafts-Schichten anzulegen.
 - **Smart-Checkout:** Automatisches Erkennen des Schichtendes über den Gerätestandort beim Verlassen des Arbeitsortes (Heimweg-Erkennung).
 - **Statistiken:** Auswertung von Arbeitszeiten und Schichtverteilungen.

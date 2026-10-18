@@ -15,6 +15,8 @@ Ziel: Schnelle Übersicht über die eigenen Schichten eines Monats und einfaches
 | Tagesliste der ausgewählten Schichten, sortiert nach Beginn | ✅ |
 | Schicht aus Vorlage hinzufügen (Auswahldialog) | ✅ |
 | Schicht per Wischen löschen (mit Sicherheitsabfrage) | ✅ |
+| Prüfhinweis an Schichten („?!“-Symbol in Gelb, z. B. nach handschriftlicher Korrektur im importierten Dienstplan), entfernbar per „Geprüft“ ([PRD Dienstplan-Import](dienstplan-import.md)) | geplant |
+| Abwesenheiten (z. B. Urlaub) ganztägig ohne Zeitangabe anzeigen ([ADR 0012](../adr/0012-abwesenheiten-als-vorlagen-art.md)) | geplant |
 | Einzelne Schicht bearbeiten (Zeiten, Pause) | offen |
 | Notizen zur Schicht (Datenfeld `notes` vorhanden, noch keine Oberfläche) | offen |
 | Wochenansicht | offen (V1 laut Roadmap) |

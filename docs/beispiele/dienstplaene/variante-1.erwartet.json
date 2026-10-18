@@ -1,0 +1,32 @@
+{
+  "beschreibung": "Erwartete Werte für die Referenz-Dienstpläne variante-1-sauber.png und variante-1-foto.jpg (generierte Dummy-Daten, keine echten Personen).",
+  "dateien": ["variante-1-sauber.png", "variante-1-foto.jpg"],
+  "titel": "Dienstplan November 2026",
+  "jahr": 2026,
+  "monat": 11,
+  "tage": 30,
+  "ersterWochentag": "So",
+  "legende": [
+    { "code": "F", "bezeichnung": "Früh", "beginn": "06:00", "ende": "14:00" },
+    { "code": "S", "bezeichnung": "Spät", "beginn": "13:30", "ende": "21:30" },
+    { "code": "N", "bezeichnung": "Nacht", "beginn": "21:15", "ende": "06:15" },
+    { "code": "T", "bezeichnung": "Tagdienst", "beginn": "08:00", "ende": "16:30" },
+    { "code": "U", "bezeichnung": "Urlaub" },
+    { "code": "FB", "bezeichnung": "Fortbildung" },
+    { "code": "–", "bezeichnung": "frei" }
+  ],
+  "zeilen": [
+    { "name": "Bergmann, Anna", "kuerzel": "AB", "codes": ["F", "F", "F", "F", "F", "–", "S", "S", "T", "S", "S", "–", "–", "N", "N", "N", "N", "N", "–", "–", "F", "F", "F", "F", "F", "–", "–", "T", "S", "S"] },
+    { "name": "Celik, Mehmet", "kuerzel": "MC", "codes": ["S", "S", "S", "S", "S", "–", "–", "N", "N", "N", "N", "N", "–", "–", "F", "F", "F", "F", "–", "–", "S", "S", "S", "S", "S", "–", "N", "N", "T", "N"] },
+    { "name": "Dietrich, Lena", "kuerzel": "LD", "codes": ["N", "N", "N", "N", "–", "–", "F", "F", "F", "F", "F", "–", "–", "S", "S", "S", "T", "–", "N", "T", "N", "N", "N", "–", "F", "F", "F", "F", "F", "–"] },
+    { "name": "Engel, Tobias", "kuerzel": "TE", "codes": ["F", "F", "F", "F", "F", "–", "–", "S", "S", "S", "S", "S", "–", "–", "T", "N", "N", "N", "N", "–", "F", "F", "T", "F", "F", "–", "–", "S", "T", "S"] },
+    { "name": "Fischer, Sabine", "kuerzel": "SF", "codes": ["S", "S", "S", "S", "S", "–", "–", "N", "N", "U", "U", "U", "U", "U", "U", "N", "N", "–", "T", "F", "F", "T", "–", "–", "T", "S", "S", "S", "–", "N"] },
+    { "name": "Hoffmann, Jonas", "kuerzel": "JH", "codes": ["N", "N", "N", "N", "N", "–", "F", "F", "F", "T", "–", "S", "S", "S", "S", "S", "–", "N", "N", "N", "N", "–", "–", "F", "F", "F", "F", "–", "S", "T"] },
+    { "name": "Krüger, Miriam", "kuerzel": "MK", "codes": ["F", "F", "F", "F", "T", "–", "–", "S", "S", "S", "S", "S", "–", "–", "N", "N", "N", "N", "N", "–", "–", "F", "F", "F", "F", "F", "–", "S", "S", "S"] },
+    { "name": "Lorenz, Paul", "kuerzel": "PL", "codes": ["S", "T", "S", "S", "S", "–", "–", "N", "N", "N", "T", "FB", "FB", "–", "F", "F", "F", "F", "F", "–", "S", "S", "S", "S", "–", "–", "T", "N", "N", "T"] },
+    { "name": "Meier, Katrin", "kuerzel": "KM", "codes": ["N", "T", "N", "N", "T", "–", "–", "F", "F", "F", "F", "F", "–", "–", "S", "S", "S", "S", "S", "–", "–", "N", "N", "N", "N", "N", "–", "–", "T", "F"] },
+    { "name": "Nowak, Daniel", "kuerzel": "DN", "codes": ["F", "F", "F", "F", "F", "–", "–", "S", "S", "S", "S", "S", "–", "N", "N", "N", "N", "N", "–", "–", "U", "U", "U", "U", "U", "F", "T", "F", "F", "–"] },
+    { "name": "Schulz, Eva", "kuerzel": "ES", "codes": ["S", "S", "S", "S", "S", "–", "N", "N", "N", "N", "N", "–", "–", "F", "F", "F", "F", "F", "–", "S", "T", "S", "S", "T", "–", "N", "N", "N", "T", "N"] },
+    { "name": "Wagner, Felix", "kuerzel": "FW", "codes": ["N", "N", "N", "N", "–", "–", "F", "F", "F", "F", "–", "–", "S", "S", "S", "S", "S", "–", "N", "N", "N", "N", "–", "–", "F", "F", "F", "F", "–", "S"] }
+  ]
+}
