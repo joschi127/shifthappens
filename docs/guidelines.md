@@ -10,6 +10,11 @@
 - **Changelog-Pflicht:** Jede signifikante Änderung oder jedes neue Feature muss im `docs/changelog.md` unter der Sektion `[Unreleased]` dokumentiert werden.
 - **Code-Stil:** Einheitliche Formatierung und klare Benennung von Variablen und Funktionen.
 
+## Testen
+- **Mobile First auch beim Testen:** Oberflächen werden zuerst in Smartphone-Größe geprüft (z. B. 390 × 844 bzw. 390 × 740 px), Desktop nur ergänzend. Lässt sich das Browserfenster nicht verkleinern (z. B. bei automatisierten Browser-Tests), die App über eine Seite desselben Dev-Servers in einem `<iframe>` dieser Größe laden.
+- Dabei besonders auf Touch-Bedienung, Lesbarkeit kleiner Elemente, Überhänge am Bildschirmrand und Kontraste achten.
+- Automatisierte Tests: `npm test` (schnell, bei jeder Änderung).
+
 ## Sprache
 - **Code auf Englisch:** Datei- und Ordnernamen im Code (`src/`, `scripts/`), Funktionen, Variablen, Typen, Felder im Datenmodell, npm-Skripte und Umgebungsvariablen (z. B. `backupService.ts`, `shiftFromType`, `rosterNames`, `test:watch`).
 - **Alles andere auf Deutsch:** Kommentare im Code, Oberflächentexte, Doku (`docs/`), Changelog, Commit-Nachrichten.
