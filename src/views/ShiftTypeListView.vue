@@ -23,7 +23,8 @@
               <ion-reorder slot="start"></ion-reorder>
               <ion-label>
                 <h2>{{ type.name }}</h2>
-                <p>
+                <p v-if="type.kind === 'absence'">Ganztägig (Abwesenheit)</p>
+                <p v-else>
                   {{ formatTime(type.startTime) }} - {{ formatTime(type.endTime) }}
                   <span v-if="type.isSplitShift" class="split-shift-badge">
                     + {{ formatTime(type.splitStartTime) }} - {{ formatTime(type.splitEndTime) }}

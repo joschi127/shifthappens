@@ -3,6 +3,11 @@
 Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
 ## [Unreleased]
+- **Dienstplan-Import, Schritt 2 (Datenmodell II):**
+  - Schicht-Vorlagen haben eine **Art** „Schicht“ oder „Abwesenheit“ (ADR 0012). Abwesenheiten sind ganztägig, ohne Uhrzeiten, Pause, Bereitschaft oder geteilte Schicht; im Editor werden die Zeitfelder ausgeblendet. Im Kalender erscheinen Abwesenheiten als gestrichelter Umriss, in der Tagesliste als „Ganztägig (Abwesenheit)“.
+  - **Kombinierte Schichtkürzel** über zwei Tage, z. B. „N01 + B11 + F02“ (ADR 0013): Prüfung der Schreibweise, einheitliche Schreibweise beim Speichern, Eindeutigkeit über alle Vorlagen, Rückfrage, wenn Bereitschaft oder zweiter Teil an der Vorlage fehlen. Hilfsfunktionen in `src/utils/shiftCodes.ts`.
+  - **Tageszuordnung der Teile einer Schicht** (Hauptteil → Bereitschaft → zweiter Teil) in `src/utils/shiftParts.ts`; der Kalender nutzt sie für den Überhang in den Folgetag.
+  - **Herkunft und Prüfhinweis an Schichten** (ADR 0014): `source`, `createdAt`, `importedAt`, `importId`, `updatedAt`, `lastChangeBy`, `review`. Schichten mit Prüfhinweis zeigen im Kalender einen gelben Punkt und in der Tagesliste „?!“ mit Grund und dem Knopf „Geprüft“.
 - **Synchronisation (Google Drive):**
   - Bugfix: Nach dem Neuladen bzw. Neustart der App lief der automatische Sync still ins Leere, weil das Zugriffstoken nur im Arbeitsspeicher lag, während die Einstellungen weiterhin „Verbunden“ anzeigten. Das Token wird nun mit Ablaufzeit gespeichert (ADR 0010), der automatische Sync läuft direkt beim App-Start, und eine abgelaufene Anmeldung wird in den Einstellungen sowie einmal pro Sitzung per Hinweis mit „Anmelden“-Knopf angezeigt (erneute Anmeldung ohne Kontoauswahl über `login_hint`).
   - Bugfix: Ein Fehler beim Abrufen der Cloud-Dateiliste wurde als „keine Datei vorhanden“ gewertet, wodurch eine zweite Backup-Datei hätte angelegt werden können. Abgelaufene Tokens (HTTP 401) werden nun erkannt.

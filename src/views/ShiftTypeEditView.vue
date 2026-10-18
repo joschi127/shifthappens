@@ -15,17 +15,34 @@
     <ion-content :fullscreen="true">
         <ion-list>
           <ion-item>
+            <div class="kind-field">
+              <ion-label position="stacked">Art</ion-label>
+              <ion-segment :value="form.kind ?? 'shift'" @ionChange="onKindChange">
+                <ion-segment-button value="shift"><ion-label>Schicht</ion-label></ion-segment-button>
+                <ion-segment-button value="absence"><ion-label>Abwesenheit</ion-label></ion-segment-button>
+              </ion-segment>
+              <ion-note v-if="isAbsenceForm" class="field-help">
+                Ganztägig, ohne Uhrzeiten und ohne Arbeitszeit, z.B. Urlaub, Fortbildung oder krank.
+              </ion-note>
+            </div>
+          </ion-item>
+
+          <ion-item>
             <ion-label position="stacked">Name</ion-label>
-            <ion-input v-model="form.name" placeholder="z.B. Frühschicht"></ion-input>
+            <ion-input v-model="form.name" :placeholder="isAbsenceForm ? 'z.B. Urlaub' : 'z.B. Frühschicht'"></ion-input>
           </ion-item>
 
           <ion-item>
             <div class="codes-field">
               <ion-label position="stacked">Schichtkürzel im Dienstplan</ion-label>
-              <tag-list-input v-model="codes" placeholder="z.B. F"></tag-list-input>
+              <tag-list-input v-model="codes" :placeholder="isAbsenceForm ? 'z.B. U' : 'z.B. F'"></tag-list-input>
               <ion-note class="field-help">
                 Genau so eingeben, wie die Schicht auf dem Papier-Dienstplan steht (z.B. F, F1 oder Früh).
                 Wird für die automatische Erkennung beim Dienstplan-Import genutzt. Mehrere Kürzel möglich.
+                <template v-if="!isAbsenceForm">
+                  Für Dienste über zwei Tage Kürzel mit „+“ verbinden, z.B. „N01 + F02“ (Nachtdienst und Folgetag)
+                  oder „N01 + B11 + F02“ (mit Bereitschaftskürzel am ersten Tag).
+                </template>
               </ion-note>
             </div>
           </ion-item>
@@ -46,6 +63,7 @@
           </div>
         </ion-item>
 
+        <template v-if="!isAbsenceForm">
         <ion-item>
           <ion-label position="stacked">Beginn</ion-label>
           <ion-datetime-button datetime="startTime"></ion-datetime-button>
@@ -146,9 +164,10 @@
             </ion-modal>
           </ion-item>
         </template>
+        </template>
       </ion-list>
 
-      <div class="summary-card ion-padding">
+      <div v-if="!isAbsenceForm" class="summary-card ion-padding">
         <ion-card>
           <ion-card-header>
             <ion-card-subtitle>Zusammenfassung</ion-card-subtitle>
@@ -216,6 +235,8 @@ import {
   IonCardSubtitle,
   IonCardContent,
   IonNote,
+  IonSegment,
+  IonSegmentButton,
   toastController,
   alertController
 } from '@ionic/vue';
@@ -230,6 +251,7 @@ import TagListInput from '../components/TagListInput.vue';
 import { markLocalModified } from '../services/googleDriveService';
 import { getImportProfile } from '../services/importSettingsService';
 import { sameEntry } from '../utils/tagList';
+import { normalizeShiftCode, parseShiftCode, sameShiftCode } from '../utils/shiftCodes';
 
 const route = useRoute();
 const router = useRouter();
@@ -247,8 +269,14 @@ const form = ref<ShiftType>({
   nightStandbyStartTime: '',
   nightStandbyEndTime: '06:00',
   nightStandbyPercentage: 25,
+  kind: 'shift',
   codes: []
 });
+
+const isAbsenceForm = computed(() => form.value.kind === 'absence');
+const onKindChange = (event: CustomEvent) => {
+  form.value.kind = event.detail.value === 'absence' ? 'absence' : 'shift';
+};
 
 const codes = computed({
   get: () => form.value.codes ?? [],
@@ -287,14 +315,21 @@ const onTimeChange = () => {
   }
 };
 
-// Ein Schichtkürzel muss eindeutig sein, sonst ist die Erkennung beim Import mehrdeutig
+// Schichtkürzel prüfen: gültige Schreibweise, eindeutig über alle Vorlagen (ADR 0002, 0013)
 const findCodeConflict = async (): Promise<string | null> => {
   const currentId = isEdit.value ? parseInt(route.params.id as string) : undefined;
   const otherTypes = (await db.shiftTypes.toArray()).filter(t => t.id !== currentId);
   const { ignoreCodes } = await getImportProfile();
 
   for (const code of codes.value) {
-    const owner = otherTypes.find(t => t.codes?.some(c => sameEntry(c, code)));
+    const parsed = parseShiftCode(code);
+    if (!parsed) {
+      return `Das Kürzel „${code}“ ist ungültig. Erlaubt sind ein Kürzel oder bis zu drei mit „+“ verbundene Teile, z.B. „N01 + B11 + F02“.`;
+    }
+    if (parsed.type === 'combo' && isAbsenceForm.value) {
+      return `Abwesenheiten können keine Kombinationen über zwei Tage haben („${code}“).`;
+    }
+    const owner = otherTypes.find(t => t.codes?.some(c => sameShiftCode(c, code)));
     if (owner) {
       return `Das Kürzel „${code}“ ist bereits bei der Vorlage „${owner.name}“ hinterlegt.`;
     }
@@ -303,6 +338,34 @@ const findCodeConflict = async (): Promise<string | null> => {
     }
   }
   return null;
+};
+
+// Hinweise, wenn eine Kombination nicht zu den Einstellungen der Vorlage passt (kein Fehler, nur Rückfrage)
+const combinationHints = (): string[] => {
+  const hints: string[] = [];
+  for (const code of codes.value) {
+    const parsed = parseShiftCode(code);
+    if (!parsed || parsed.type !== 'combo') continue;
+    if (parsed.standby && !form.value.hasNightStandby) {
+      hints.push(`„${code}“ enthält ein Bereitschaftskürzel, die Nachtbereitschaft ist aber ausgeschaltet.`);
+    }
+    if (!form.value.isSplitShift) {
+      hints.push(`„${code}“ reicht in den Folgetag, es ist aber kein zweiter Teil (geteilte Schicht) eingerichtet.`);
+    }
+  }
+  return hints;
+};
+
+const confirmHints = async (hints: string[]): Promise<boolean> => {
+  if (!hints.length) return true;
+  const alert = await alertController.create({
+    header: 'Bitte prüfen',
+    message: hints.join(' '),
+    buttons: [{ text: 'Zurück', role: 'cancel' }, { text: 'Trotzdem speichern', role: 'confirm' }]
+  });
+  await alert.present();
+  const { role } = await alert.onDidDismiss();
+  return role === 'confirm';
 };
 
 const save = async () => {
@@ -327,8 +390,14 @@ const save = async () => {
     return;
   }
 
-  // Array kopieren: Vue-Proxies lassen sich nicht in IndexedDB speichern
-  const data: ShiftType = { ...form.value, codes: [...codes.value] };
+  if (!(await confirmHints(combinationHints()))) return;
+
+  // Array kopieren (Vue-Proxies lassen sich nicht in IndexedDB speichern), Schreibweise vereinheitlichen
+  const data: ShiftType = { ...form.value, codes: codes.value.map(normalizeShiftCode) };
+  if (isAbsenceForm.value) {
+    // Abwesenheiten sind ganztägig (ADR 0012)
+    Object.assign(data, { kind: 'absence', startTime: '', endTime: '', defaultPauseMinutes: 0, hasNightStandby: false, isSplitShift: false });
+  }
 
   try {
     if (isEdit.value) {
@@ -457,6 +526,15 @@ onMounted(loadShiftType);
   color: white;
   font-weight: bold;
   text-shadow: 0 0 2px rgba(0,0,0,0.5);
+}
+
+.kind-field {
+  width: 100%;
+  padding-bottom: 8px;
+}
+
+.kind-field ion-segment {
+  margin-top: 6px;
 }
 
 .codes-field {

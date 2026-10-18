@@ -157,7 +157,7 @@ Simulation mit `tesseract.js` 7 in Node, Skripte und beste Einstellung in [`scri
 ## Umsetzungsschritte
 
 1. ✅ **Datenmodell und Einstellungen I:** Schichtkürzel, Import-Profil, Tabelle `importSettings`, gemeinsame Backup-Funktionen, `shiftFromType`, Vitest, Referenz-Beispiele.
-2. **Datenmodell II:**
+2. ✅ **Datenmodell II:**
    - Art der Vorlage (`kind`, ADR 0012), mit Editor und Kalenderanzeige von Abwesenheiten
    - Herkunft und Prüfhinweis an Schichten (ADR 0014), mit gelbem „?!“ und „Geprüft“
    - Zerlegung und Prüfung kombinierter Kürzel (ADR 0013) im Vorlagen-Editor

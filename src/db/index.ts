@@ -1,7 +1,12 @@
 import Dexie, { Table } from 'dexie';
 
+// Art einer Vorlage bzw. Schicht: Schicht mit Uhrzeiten oder ganztägige Abwesenheit (ADR 0012).
+// Fehlt der Wert, gilt 'shift' (ältere Daten).
+export type ShiftKind = 'shift' | 'absence';
+
 export interface ShiftType {
   id?: number;
+  kind?: ShiftKind;
   name: string;
   startTime: string; // HH:mm
   endTime: string;   // HH:mm
@@ -15,12 +20,21 @@ export interface ShiftType {
   nightStandbyStartTime?: string;
   nightStandbyEndTime?: string;
   nightStandbyPercentage?: number;
-  codes?: string[];  // Schichtkürzel wie auf dem Papier-Dienstplan (z. B. "F", "F1")
+  codes?: string[];  // Schichtkürzel wie auf dem Papier-Dienstplan (z. B. "F", "F1", "N01 + B11 + F02", ADR 0013)
+}
+
+// Herkunft und Prüfhinweis einer Schicht (ADR 0014). Fehlende Werte gelten als "manuell, ohne Verlauf".
+export type ShiftSource = 'manual' | 'import';
+
+export interface ShiftReview {
+  reason: string;
+  since: string;  // ISO-Zeitpunkt
 }
 
 export interface Shift {
   id?: number;
   date: string;       // ISO Date String (YYYY-MM-DD)
+  kind?: ShiftKind;   // aus der Vorlage übernommen; bei 'absence' sind die Uhrzeiten leer
   shiftTypeId?: number;
   name: string;       // Fallback or custom name
   startTime: string;
@@ -33,6 +47,13 @@ export interface Shift {
   isSplitShift: boolean;
   splitStartTime?: string;
   splitEndTime?: string;
+  source?: ShiftSource;
+  createdAt?: string;
+  importedAt?: string;     // erster Import dieser Schicht
+  importId?: string;       // Importvorgang, der die Schicht zuletzt geschrieben hat
+  updatedAt?: string;
+  lastChangeBy?: ShiftSource;
+  review?: ShiftReview;    // "zu prüfen" (gelbes ?!), entfernt per "Geprüft"
 }
 
 // Normierte Bildkoordinaten (0..1), damit eine Vorlage unabhängig von der Fotoauflösung passt

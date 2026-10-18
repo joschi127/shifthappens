@@ -49,10 +49,11 @@
                 v-for="shift in getShiftsForDate(date)" 
                 :key="shift.id" 
                 class="shift-indicator"
-                :class="{ 'crosses-midnight': isShiftCrossingMidnight(shift) }"
-                :style="{ backgroundColor: getShiftColor(shift) }"
+                :class="{ 'crosses-midnight': isShiftCrossingMidnight(shift), 'absence': isAbsence(shift) }"
+                :style="isAbsence(shift) ? { borderColor: getShiftColor(shift), color: getShiftColor(shift) } : { backgroundColor: getShiftColor(shift) }"
               >
                 {{ getShiftShortName(shift) }}
+                <span v-if="shift.review" class="review-dot" aria-label="Zu prüfen"></span>
               </div>
             </div>
           </div>
@@ -66,10 +67,18 @@
           <ion-item-sliding v-for="shift in selectedDayShifts" :key="shift.id">
             <ion-item>
               <ion-label>
-                <h2>{{ shift.name }}</h2>
-                <p>{{ shift.startTime }} - {{ shift.endTime }} <span v-if="shift.isSplitShift">/ {{ shift.splitStartTime }} - {{ shift.splitEndTime }}</span></p>
+                <h2>
+                  {{ shift.name }}
+                  <span v-if="shift.review" class="review-badge" :title="shift.review.reason">?!</span>
+                </h2>
+                <p v-if="isAbsence(shift)">Ganztägig (Abwesenheit)</p>
+                <p v-else>{{ shift.startTime }} - {{ shift.endTime }} <span v-if="shift.isSplitShift">/ {{ shift.splitStartTime }} - {{ shift.splitEndTime }}</span></p>
+                <p v-if="shift.review" class="review-reason">{{ shift.review.reason }}</p>
               </ion-label>
-              <ion-note slot="end" v-if="shift.isNightStandby">Nachtbereitschaft</ion-note>
+              <ion-button v-if="shift.review" slot="end" size="small" fill="outline" color="warning" @click.stop="markReviewed(shift)">
+                Geprüft
+              </ion-button>
+              <ion-note slot="end" v-else-if="shift.isNightStandby">Nachtbereitschaft</ion-note>
             </ion-item>
             <ion-item-options side="end">
               <ion-item-option color="danger" @click="deleteShift(shift.id!)">
@@ -103,7 +112,8 @@
               <div slot="start" class="color-dot" :style="{ backgroundColor: type.color }"></div>
               <ion-label>
                 <h2>{{ type.name }}</h2>
-                <p>{{ type.startTime }} - {{ type.endTime }}</p>
+                <p v-if="isAbsence(type)">Ganztägig (Abwesenheit)</p>
+                <p v-else>{{ type.startTime }} - {{ type.endTime }}</p>
               </ion-label>
             </ion-item>
           </ion-list>
@@ -133,8 +143,9 @@ import {
 import { db, Shift, ShiftType } from '../db';
 import { markLocalModified } from '../services/googleDriveService';
 import { liveQuery } from 'dexie';
-import { toISODateString, crossesMidnight, getNextDayISO } from '../utils/timeUtils';
-import { shiftFromType } from '../utils/shiftFactory';
+import { toISODateString } from '../utils/timeUtils';
+import { isAbsence, shiftFromType } from '../utils/shiftFactory';
+import { reachesNextDay } from '../utils/shiftParts';
 
 const today = new Date();
 const currentMonth = ref(today.getMonth());
@@ -281,11 +292,20 @@ const isShiftCrossingMidnight = (shift: Shift) => {
   const standbyStartTime = shift.nightStandbyStartTime || type?.nightStandbyStartTime;
   const standbyEndTime = shift.nightStandbyEndTime || type?.nightStandbyEndTime;
 
-  const mainCrosses = crossesMidnight(startTime, endTime);
-  const splitCrosses = shift.isSplitShift && splitStartTime && splitEndTime ? crossesMidnight(splitStartTime, splitEndTime) : false;
-  const standbyCrosses = shift.isNightStandby && standbyStartTime && standbyEndTime ? crossesMidnight(standbyStartTime, standbyEndTime) : false;
-  
-  return mainCrosses || splitCrosses || standbyCrosses;
+  // Teile folgen zeitlich aufeinander (Hauptteil -> Bereitschaft -> zweiter Teil), siehe ADR 0013
+  return reachesNextDay({
+    kind: shift.kind,
+    startTime, endTime,
+    isNightStandby: shift.isNightStandby, nightStandbyStartTime: standbyStartTime, nightStandbyEndTime: standbyEndTime,
+    isSplitShift: shift.isSplitShift, splitStartTime, splitEndTime
+  });
+};
+
+// "Geprüft": Prüfhinweis entfernen (ADR 0014)
+const markReviewed = async (shift: Shift) => {
+  if (!shift.id) return;
+  await db.shifts.update(shift.id, { review: undefined, updatedAt: new Date().toISOString(), lastChangeBy: 'manual' });
+  markLocalModified();
 };
 
 /**
@@ -350,7 +370,7 @@ const openAddShiftModal = () => {
 };
 
 const addShiftFromType = async (type: ShiftType) => {
-  await db.shifts.add(shiftFromType(type, selectedDate.value));
+  await db.shifts.add(shiftFromType(type, selectedDate.value, { source: 'manual' }));
   markLocalModified();
   isModalOpen.value = false;
 };
@@ -496,6 +516,41 @@ const deleteShift = async (id: number) => {
   text-shadow: 0px 0px 2px rgba(0,0,0,0.5);
   position: relative;
   overflow: hidden;
+}
+
+/* Abwesenheit: ganztägig, als Umriss statt Fläche */
+.shift-indicator.absence {
+  background: transparent;
+  border: 1.5px dashed;
+  text-shadow: none;
+}
+
+/* Prüfhinweis (ADR 0014): gelber Punkt im Indikator */
+.review-dot {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ion-color-warning);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.review-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: var(--ion-color-warning);
+  color: var(--ion-color-warning-contrast);
+  font-size: 0.75rem;
+  font-weight: bold;
+  vertical-align: middle;
+}
+
+.review-reason {
+  color: var(--ion-color-warning-shade) !important;
 }
 
 .shift-indicator.crosses-midnight {

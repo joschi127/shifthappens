@@ -5,5 +5,5 @@
 | [Schicht-Vorlagen](schicht-vorlagen.md) | umgesetzt (nachträglich dokumentiert) |
 | [Kalender](kalender.md) | Monatsansicht umgesetzt, weitere Ansichten offen (nachträglich dokumentiert) |
 | [Datensicherung und Synchronisation](datensicherung-und-sync.md) | umgesetzt, `.ics`-Abo geplant (nachträglich dokumentiert) |
-| [Dienstplan-Import per Foto/PDF](dienstplan-import.md) | in Arbeit (Schritt 1 von 10) |
+| [Dienstplan-Import per Foto/PDF](dienstplan-import.md) | in Arbeit (Schritt 2 von 10 umgesetzt) |
 | [Kalender teilen (ICS-Abo)](kalender-teilen.md) | geplant, PoC ausstehend |
