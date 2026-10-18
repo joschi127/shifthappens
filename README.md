@@ -20,11 +20,14 @@ Eine mobile Progressive Web App (PWA) zur Verwaltung von persönlichen Dienst- u
 - [Changelog](docs/changelog.md)
 - [Roadmap](docs/roadmap.md)
 - [Guidelines](docs/guidelines.md)
+- [Anforderungen (PRDs)](docs/prd/)
+- [Architekturentscheidungen (ADRs)](docs/adr/)
 
 ## Entwicklung
 1. Abhängigkeiten installieren: `npm install`
 2. Entwicklungs-Server starten: `npm run dev`
 3. Produktions-Build erstellen: `npm run build`
+4. Tests ausführen: `npm test` (bzw. `npm run test:watch` während der Entwicklung)
 
 ## Deployment (GitHub Pages)
 

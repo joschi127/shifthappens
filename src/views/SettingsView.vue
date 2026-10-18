@@ -27,6 +27,51 @@
 
       <ion-list :inset="true">
         <ion-list-header>
+          <ion-label>Dienstplan-Import</ion-label>
+        </ion-list-header>
+
+        <ion-item>
+          <div class="settings-field">
+            <ion-label position="stacked">Name im Dienstplan</ion-label>
+            <tag-list-input
+              :model-value="importProfile.rosterNames"
+              placeholder="z.B. Anna Müller"
+              @update:model-value="updateProfile({ rosterNames: $event })"
+            ></tag-list-input>
+            <ion-note class="field-help">
+              So, wie du im Dienstplan geführt wirst: voller Name, nur Vor- oder Nachname, Initialen
+              oder ein Kürzel (z.B. „Müller, A.“ oder „AMü“). Mehrere Schreibweisen möglich,
+              etwa für verschiedene Arbeitgeber.
+            </ion-note>
+          </div>
+        </ion-item>
+
+        <ion-item>
+          <div class="settings-field">
+            <ion-label position="stacked">Kürzel ohne Eintrag</ion-label>
+            <tag-list-input
+              :model-value="importProfile.ignoreCodes"
+              placeholder="z.B. X"
+              @update:model-value="updateProfile({ ignoreCodes: $event })"
+            ></tag-list-input>
+            <ion-note class="field-help">
+              Kürzel aus dem Papier-Dienstplan, für die keine Schicht eingetragen wird,
+              z.B. für frei, Urlaub oder krank (X, U, K).
+            </ion-note>
+          </div>
+        </ion-item>
+
+        <ion-item button router-link="/shift-types">
+          <ion-icon slot="start" :icon="pricetagsOutline"></ion-icon>
+          <ion-label>
+            <h2>Schichtkürzel</h2>
+            <p>Werden an den Schicht-Vorlagen gepflegt.</p>
+          </ion-label>
+        </ion-item>
+      </ion-list>
+
+      <ion-list :inset="true">
+        <ion-list-header>
           <ion-label>Google Drive Synchronisation</ion-label>
         </ion-list-header>
 
@@ -120,6 +165,7 @@ import {
   IonBackButton,
   IonToggle,
   IonButton,
+  IonNote,
   alertController,
   loadingController,
   toastController
@@ -130,9 +176,20 @@ import {
   moon,
   sunny,
   syncOutline,
-  refreshOutline
+  refreshOutline,
+  pricetagsOutline
 } from 'ionicons/icons';
-import { ref } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
+import { liveQuery, Subscription } from 'dexie';
+import { db, ImportProfile } from '../db';
+import TagListInput from '../components/TagListInput.vue';
+import {
+  DEFAULT_IMPORT_PROFILE,
+  findShiftTypeByCode,
+  getImportProfile,
+  profileFromEntry,
+  saveImportProfile
+} from '../services/importSettingsService';
 import { exportDatabase, importDatabase } from '../services/dbExportService';
 import { isDarkMode, toggleDarkMode } from '../services/themeService';
 import {
@@ -148,6 +205,37 @@ import {
 } from '../services/googleDriveService';
 
 const fileInput = ref<HTMLInputElement | null>(null);
+
+// Import-Profil live beobachten, damit Änderungen durch Sync/Backup-Import sofort sichtbar sind
+const importProfile = ref<ImportProfile>({ ...DEFAULT_IMPORT_PROFILE });
+let importProfileSubscription: Subscription | null = null;
+
+onMounted(() => {
+  importProfileSubscription = liveQuery(() => db.importSettings.get('profile')).subscribe({
+    next: (entry) => { importProfile.value = profileFromEntry(entry); }
+  });
+});
+
+onUnmounted(() => importProfileSubscription?.unsubscribe());
+
+const updateProfile = async (changes: Partial<ImportProfile>) => {
+  // Ein Kürzel ohne Eintrag darf nicht gleichzeitig Schichtkürzel einer Vorlage sein
+  for (const code of changes.ignoreCodes ?? []) {
+    const owner = await findShiftTypeByCode(code);
+    if (owner) {
+      const toast = await toastController.create({
+        message: `Das Kürzel „${code}“ ist bereits bei der Vorlage „${owner.name}“ hinterlegt.`,
+        duration: 3000,
+        color: 'warning'
+      });
+      await toast.present();
+      return;
+    }
+  }
+  // Aktuellen Stand aus der DB lesen: liveQuery aktualisiert importProfile asynchron,
+  // bei schnell aufeinanderfolgenden Änderungen ginge sonst eine verloren
+  await saveImportProfile({ ...(await getImportProfile()), ...changes });
+};
 
 const onToggleDark = (event: CustomEvent) => {
   if (isDarkMode.value !== event.detail.checked) {
@@ -278,6 +366,17 @@ const handleImport = async (event: Event) => {
 </script>
 
 <style scoped>
+.settings-field {
+  width: 100%;
+  padding-bottom: 8px;
+}
+
+.field-help {
+  display: block;
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
 .version-text {
   color: var(--ion-color-medium);
   font-size: 0.8rem;

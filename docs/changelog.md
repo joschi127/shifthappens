@@ -3,6 +3,19 @@
 Alle relevanten Änderungen an diesem Projekt werden in dieser Datei dokumentiert.
 
 ## [Unreleased]
+- **Dienstplan-Import (Vorbereitung, Schritt 1):**
+  - Schicht-Vorlagen haben ein neues Feld **„Schichtkürzel im Dienstplan“** (`ShiftType.codes`, mehrere Kürzel möglich). Es wird so eingegeben, wie die Schicht auf dem Papier-Dienstplan steht, und dient später der automatischen Erkennung. Doppelte Kürzel über mehrere Vorlagen hinweg werden beim Speichern abgelehnt.
+  - Neuer Bereich **„Dienstplan-Import“** in den Einstellungen mit „Name im Dienstplan“ (voller Name, Vor-/Nachname, Initialen oder Kürzel, mehrere Schreibweisen möglich) und „Kürzel ohne Eintrag“ (z. B. frei, Urlaub, krank). Ein Kürzel kann nicht gleichzeitig Schichtkürzel und Kürzel ohne Eintrag sein.
+  - Neue Dexie-Tabelle `importSettings` (Schema-Version 5) für Import-Profil und künftige Import-Vorlagen. Sie wird im Backup-Export und in der Google-Drive-Synchronisation mitgesichert (Backup-Format Version 2). Ältere Backups (Version 1) lassen sich weiterhin importieren; die lokalen Import-Einstellungen bleiben dabei erhalten.
+  - Export, Import und Drive-Sync nutzen jetzt gemeinsame Funktionen (`backupService.ts`) statt vier separater Implementierungen.
+  - Neue wiederverwendbare Komponente `TagListInput.vue` für Listen-Eingaben (Chips, per Tastatur bedienbar).
+  - Das Anlegen einer Schicht aus einer Vorlage ist nach `utils/shiftFactory.ts` ausgelagert (vom Kalender und künftig vom Import genutzt).
+- **Synchronisation:**
+  - Bugfix: Änderungen an Schicht-Vorlagen (Anlegen, Bearbeiten, Löschen, Umsortieren) haben die Daten nicht als lokal geändert markiert und wurden deshalb bei der Google-Drive-Synchronisation nicht hochgeladen bzw. konnten von einem älteren Cloud-Stand überschrieben werden. `ShiftTypeEditView.vue` und `ShiftTypeListView.vue` rufen nun `markLocalModified()` auf.
+- **Tests & Agenten:**
+  - Vitest als Test-Framework eingeführt (`npm test`), inkl. `fake-indexeddb` für Datenbank-Tests. Erste Tests für Backup-Format, Listen-Eingaben und Schicht-Erzeugung.
+  - Dokumentationsstruktur: Anforderungen als PRDs in `docs/prd/`, Architekturentscheidungen als ADRs in `docs/adr/` (Regel in `docs/guidelines.md` ergänzt). Erste Einträge: PRD Dienstplan-Import sowie ADR 0001–0003.
+  - `CLAUDE.md` und `AGENTS.md` angelegt, die analog zu `.junie/guidelines.md` auf `docs/guidelines.md` verweisen.
 - **Deployment (GitHub Pages / CI):**
   - Chore: Changelog-Eintrag hinzugefügt, um nach der Umstellung der Pages-Source auf *GitHub Actions* einen Push auf `main` und damit einen ersten Deployment-Lauf über den neuen offiziellen Workflow auszulösen.
   - Bugfix: Das GitHub-Pages-Deployment schlug im automatischen Workflow „pages build and deployment" mit `Invalid actions OIDC token due to No keys from key endpoint match the id token` fehl. Ursache war das branch-basierte Deployment über `peaceiris/actions-gh-pages` (Push auf `gh-pages`), das den fehleranfälligen Legacy-Pages-Build auslöste. Der Workflow (`.github/workflows/deploy.yml`) nutzt nun das **offizielle GitHub-Pages-Deployment** (`actions/configure-pages` + `actions/upload-pages-artifact` + `actions/deploy-pages`) mit den Berechtigungen `pages: write` und `id-token: write` (OIDC) sowie einer `concurrency`-Gruppe. Ein `gh-pages`-Branch wird nicht mehr benötigt; die Pages-Source muss auf *GitHub Actions* umgestellt werden.

@@ -85,6 +85,7 @@ import { add, trashOutline } from 'ionicons/icons';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { db, ShiftType } from '../db';
+import { markLocalModified } from '../services/googleDriveService';
 
 const router = useRouter();
 const shiftTypes = ref<ShiftType[]>([]);
@@ -133,6 +134,7 @@ const handleReorder = async (event: any) => {
       return db.shiftTypes.update(type.id!, { order: index });
     });
     await Promise.all(updates);
+    markLocalModified();
   } catch (e) {
     console.error('Fehler beim Speichern der Reihenfolge', e);
   }
@@ -155,6 +157,7 @@ const deleteShiftType = async (id: number) => {
         role: 'destructive',
         handler: async () => {
           await db.shiftTypes.delete(id);
+          markLocalModified();
           await loadShiftTypes();
         }
       }

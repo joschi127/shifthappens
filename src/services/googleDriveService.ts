@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import { db } from '../db';
+import { collectBackup, isValidBackup, restoreBackup } from './backupService';
 import { alertController, loadingController, toastController } from '@ionic/vue';
 
 const CLIENT_ID_KEY = 'google_client_id';
@@ -279,14 +279,7 @@ export async function syncNow(manual = true): Promise<{ success: boolean; messag
   }
 
   try {
-    const shifts = await db.shifts.toArray();
-    const shiftTypes = await db.shiftTypes.toArray();
-    const backupTimestamp = new Date().toISOString();
-    const payload = {
-      version: 1,
-      timestamp: backupTimestamp,
-      tables: { shifts, shiftTypes }
-    };
+    const payload = await collectBackup(new Date().toISOString());
     const jsonString = JSON.stringify(payload, null, 2);
 
     const cloudFile = await findCloudFile();
@@ -333,13 +326,8 @@ export async function syncNow(manual = true): Promise<{ success: boolean; messag
 
     if (!localChanged && cloudChanged) {
       // Only cloud changed -> download and import
-      if (cloudBackup && cloudBackup.data.tables) {
-        await db.transaction('rw', db.shifts, db.shiftTypes, async () => {
-          await db.shifts.clear();
-          await db.shiftTypes.clear();
-          if (cloudBackup.data.tables.shifts) await db.shifts.bulkAdd(cloudBackup.data.tables.shifts);
-          if (cloudBackup.data.tables.shiftTypes) await db.shiftTypes.bulkAdd(cloudBackup.data.tables.shiftTypes);
-        });
+      if (cloudBackup && isValidBackup(cloudBackup.data)) {
+        await restoreBackup(cloudBackup.data);
         updateSyncStatus('Heruntergeladen');
         return { success: true, message: 'Änderungen aus der Cloud heruntergeladen und übernommen.' };
       }
@@ -361,13 +349,8 @@ export async function syncNow(manual = true): Promise<{ success: boolean; messag
             {
               text: 'Cloud-Stand bevorzugen',
               handler: async () => {
-                if (cloudBackup && cloudBackup.data.tables) {
-                  await db.transaction('rw', db.shifts, db.shiftTypes, async () => {
-                    await db.shifts.clear();
-                    await db.shiftTypes.clear();
-                    if (cloudBackup.data.tables.shifts) await db.shifts.bulkAdd(cloudBackup.data.tables.shifts);
-                    if (cloudBackup.data.tables.shiftTypes) await db.shiftTypes.bulkAdd(cloudBackup.data.tables.shiftTypes);
-                  });
+                if (cloudBackup && isValidBackup(cloudBackup.data)) {
+                  await restoreBackup(cloudBackup.data);
                   updateSyncStatus('Konflikt gelöst');
                   resolve({ success: true, message: 'Cloud-Stand erfolgreich übernommen.' });
                 } else {
@@ -394,13 +377,8 @@ export async function syncNow(manual = true): Promise<{ success: boolean; messag
       // Automatic sync conflict: Default to newest or warn user via toast/alert
       // Let's compare timestamps: if cloud is newer than local, download; else upload
       if (cloudTimestampMs >= localModifiedTime) {
-        if (cloudBackup && cloudBackup.data.tables) {
-          await db.transaction('rw', db.shifts, db.shiftTypes, async () => {
-            await db.shifts.clear();
-            await db.shiftTypes.clear();
-            if (cloudBackup.data.tables.shifts) await db.shifts.bulkAdd(cloudBackup.data.tables.shifts);
-            if (cloudBackup.data.tables.shiftTypes) await db.shiftTypes.bulkAdd(cloudBackup.data.tables.shiftTypes);
-          });
+        if (cloudBackup && isValidBackup(cloudBackup.data)) {
+          await restoreBackup(cloudBackup.data);
           updateSyncStatus('Auto-Sync: Konflikt gelöst');
           return { success: true, message: 'Auto-Sync: Cloud-Stand war neuer und wurde übernommen.' };
         }

@@ -134,6 +134,7 @@ import { db, Shift, ShiftType } from '../db';
 import { markLocalModified } from '../services/googleDriveService';
 import { liveQuery } from 'dexie';
 import { toISODateString, crossesMidnight, getNextDayISO } from '../utils/timeUtils';
+import { shiftFromType } from '../utils/shiftFactory';
 
 const today = new Date();
 const currentMonth = ref(today.getMonth());
@@ -349,23 +350,7 @@ const openAddShiftModal = () => {
 };
 
 const addShiftFromType = async (type: ShiftType) => {
-  const newShift: Shift = {
-    date: selectedDate.value,
-    shiftTypeId: type.id,
-    name: type.name,
-    startTime: type.startTime,
-    endTime: type.endTime,
-    pauseMinutes: type.defaultPauseMinutes || 0,
-    isNightStandby: type.hasNightStandby,
-    nightStandbyStartTime: type.nightStandbyStartTime,
-    nightStandbyEndTime: type.nightStandbyEndTime,
-    notes: '',
-    isSplitShift: type.isSplitShift,
-    splitStartTime: type.splitStartTime,
-    splitEndTime: type.splitEndTime
-  };
-  
-  await db.shifts.add(newShift);
+  await db.shifts.add(shiftFromType(type, selectedDate.value));
   markLocalModified();
   isModalOpen.value = false;
 };

@@ -10,6 +10,11 @@
 - **Changelog-Pflicht:** Jede signifikante Änderung oder jedes neue Feature muss im `docs/changelog.md` unter der Sektion `[Unreleased]` dokumentiert werden.
 - **Code-Stil:** Einheitliche Formatierung und klare Benennung von Variablen und Funktionen.
 
+## Anforderungen & Architekturentscheidungen
+- **PRD pro Feature:** Größere neue Features bekommen ein Anforderungsdokument in `docs/prd/<feature>.md` (Ziel, Grundsätze, Funktionsumfang, Einschränkungen, Umsetzungsschritte mit Status). Es wird während der Umsetzung aktuell gehalten.
+- **ADR pro Architekturentscheidung:** Entscheidungen, die über ein einzelnes Feature hinaus wirken oder später angezweifelt werden könnten (z. B. Datenmodell, Backup-Format, externe Dienste), werden als ADR in `docs/adr/NNNN-kurzer-titel.md` festgehalten (Status, Kontext, Entscheidung, Konsequenzen). ADRs werden fortlaufend nummeriert und nicht umgeschrieben; ändert sich eine Entscheidung, entsteht ein neues ADR, das das alte ersetzt bzw. ergänzt (Status des alten entsprechend anpassen).
+- Kleinere Detailentscheidungen gehören ins PRD, nicht in ein eigenes ADR.
+
 ## Git & Commits
 - **Keine Co-Autor-Zeile:** Commit-Nachrichten dürfen **keine** `Co-authored-by:`-Zeile enthalten (insbesondere kein `Co-authored-by: Some AI Agent`).
 

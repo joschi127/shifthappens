@@ -19,6 +19,17 @@
             <ion-input v-model="form.name" placeholder="z.B. Frühschicht"></ion-input>
           </ion-item>
 
+          <ion-item>
+            <div class="codes-field">
+              <ion-label position="stacked">Schichtkürzel im Dienstplan</ion-label>
+              <tag-list-input v-model="codes" placeholder="z.B. F"></tag-list-input>
+              <ion-note class="field-help">
+                Genau so eingeben, wie die Schicht auf dem Papier-Dienstplan steht (z.B. F, F1 oder Früh).
+                Wird für die automatische Erkennung beim Dienstplan-Import genutzt. Mehrere Kürzel möglich.
+              </ion-note>
+            </div>
+          </ion-item>
+
         <ion-item>
           <ion-label position="stacked">Farbe</ion-label>
           <div class="color-row">
@@ -204,6 +215,7 @@ import {
   IonCardTitle,
   IonCardSubtitle,
   IonCardContent,
+  IonNote,
   toastController,
   alertController
 } from '@ionic/vue';
@@ -214,6 +226,10 @@ import { calculateLegalPause } from '../utils/pauseCalculator';
 import { PREDEFINED_COLORS } from '../utils/colors';
 import { addHours, formatToHHmm, getDurationMinutes, formatDuration } from '../utils/timeUtils';
 import { watch } from 'vue';
+import TagListInput from '../components/TagListInput.vue';
+import { markLocalModified } from '../services/googleDriveService';
+import { getImportProfile } from '../services/importSettingsService';
+import { sameEntry } from '../utils/tagList';
 
 const route = useRoute();
 const router = useRouter();
@@ -230,7 +246,13 @@ const form = ref<ShiftType>({
   hasNightStandby: false,
   nightStandbyStartTime: '',
   nightStandbyEndTime: '06:00',
-  nightStandbyPercentage: 25
+  nightStandbyPercentage: 25,
+  codes: []
+});
+
+const codes = computed({
+  get: () => form.value.codes ?? [],
+  set: (value: string[]) => { form.value.codes = value; }
 });
 
 // Watcher für Geteilte Schicht Defaults
@@ -265,6 +287,24 @@ const onTimeChange = () => {
   }
 };
 
+// Ein Schichtkürzel muss eindeutig sein, sonst ist die Erkennung beim Import mehrdeutig
+const findCodeConflict = async (): Promise<string | null> => {
+  const currentId = isEdit.value ? parseInt(route.params.id as string) : undefined;
+  const otherTypes = (await db.shiftTypes.toArray()).filter(t => t.id !== currentId);
+  const { ignoreCodes } = await getImportProfile();
+
+  for (const code of codes.value) {
+    const owner = otherTypes.find(t => t.codes?.some(c => sameEntry(c, code)));
+    if (owner) {
+      return `Das Kürzel „${code}“ ist bereits bei der Vorlage „${owner.name}“ hinterlegt.`;
+    }
+    if (ignoreCodes.some(c => sameEntry(c, code))) {
+      return `Das Kürzel „${code}“ ist in den Einstellungen als „Kürzel ohne Eintrag“ hinterlegt.`;
+    }
+  }
+  return null;
+};
+
 const save = async () => {
   if (!form.value.name) {
     const toast = await toastController.create({
@@ -276,18 +316,33 @@ const save = async () => {
     return;
   }
 
+  const codeConflict = await findCodeConflict();
+  if (codeConflict) {
+    const toast = await toastController.create({
+      message: codeConflict,
+      duration: 3000,
+      color: 'warning'
+    });
+    await toast.present();
+    return;
+  }
+
+  // Array kopieren: Vue-Proxies lassen sich nicht in IndexedDB speichern
+  const data: ShiftType = { ...form.value, codes: [...codes.value] };
+
   try {
     if (isEdit.value) {
       const id = parseInt(route.params.id as string);
-      await db.shiftTypes.update(id, { ...form.value });
+      await db.shiftTypes.put({ ...data, id });
     } else {
       // Höchsten order-Wert ermitteln
       const types = await db.shiftTypes.toArray();
       const nextOrder = types.length > 0 
         ? Math.max(...types.map(t => t.order || 0)) + 1 
         : 0;
-      await db.shiftTypes.add({ ...form.value, order: nextOrder });
+      await db.shiftTypes.add({ ...data, order: nextOrder });
     }
+    markLocalModified();
     router.back();
   } catch (e) {
     const toast = await toastController.create({
@@ -311,6 +366,7 @@ const confirmDelete = async () => {
         handler: async () => {
           if (route.params.id) {
             await db.shiftTypes.delete(parseInt(route.params.id as string));
+            markLocalModified();
             router.back();
           }
         }
@@ -401,6 +457,17 @@ onMounted(loadShiftType);
   color: white;
   font-weight: bold;
   text-shadow: 0 0 2px rgba(0,0,0,0.5);
+}
+
+.codes-field {
+  width: 100%;
+  padding-bottom: 8px;
+}
+
+.field-help {
+  display: block;
+  font-size: 0.8rem;
+  line-height: 1.3;
 }
 
 .summary-card {

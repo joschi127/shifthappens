@@ -15,6 +15,7 @@ export interface ShiftType {
   nightStandbyStartTime?: string;
   nightStandbyEndTime?: string;
   nightStandbyPercentage?: number;
+  codes?: string[];  // Schichtkürzel wie auf dem Papier-Dienstplan (z. B. "F", "F1")
 }
 
 export interface Shift {
@@ -34,9 +35,40 @@ export interface Shift {
   splitEndTime?: string;
 }
 
+// Normierte Bildkoordinaten (0..1), damit eine Vorlage unabhängig von der Fotoauflösung passt
+export interface NormalizedPoint {
+  x: number;
+  y: number;
+}
+
+export interface ImportTemplate {
+  id: string;
+  name: string;
+  orientation: 'horizontal' | 'vertical';
+  // Ecken des eigenen Streifens: oben links, oben rechts, unten rechts, unten links
+  region?: [NormalizedPoint, NormalizedPoint, NormalizedPoint, NormalizedPoint];
+  // Anteil der Namenszelle am Streifen (0..1), wird vor der Erkennung abgeschnitten
+  nameCellFraction?: number;
+}
+
+export interface ImportProfile {
+  rosterNames: string[];  // Name/Kürzel, wie man im Dienstplan geführt wird
+  ignoreCodes: string[];  // Kürzel, die keinen Eintrag erzeugen (frei, Urlaub, krank, ...)
+}
+
+export interface ImportSettingsMap {
+  profile: ImportProfile;
+  templates: ImportTemplate[];
+}
+
+export type ImportSetting = {
+  [K in keyof ImportSettingsMap]: { key: K; value: ImportSettingsMap[K] }
+}[keyof ImportSettingsMap];
+
 export class MyDatabase extends Dexie {
   shifts!: Table<Shift>;
   shiftTypes!: Table<ShiftType>;
+  importSettings!: Table<ImportSetting, string>;
 
   constructor() {
     super('ShiftHappensDB');
@@ -67,6 +99,10 @@ export class MyDatabase extends Dexie {
           await tx.table('shiftTypes').update(types[i].id, { order: i });
         }
       }
+    });
+
+    this.version(5).stores({
+      importSettings: 'key'
     });
   }
 }

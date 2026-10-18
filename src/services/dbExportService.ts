@@ -1,17 +1,8 @@
-import { db } from '../db';
 import { markLocalModified } from './googleDriveService';
+import { collectBackup, isValidBackup, restoreBackup } from './backupService';
 
 export async function exportDatabase() {
-  const shifts = await db.shifts.toArray();
-  const shiftTypes = await db.shiftTypes.toArray();
-
-  const data = {
-    version: 1,
-    tables: {
-      shifts,
-      shiftTypes
-    }
-  };
+  const data = await collectBackup(new Date().toISOString());
 
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -27,23 +18,15 @@ export async function exportDatabase() {
 export async function importDatabase(jsonString: string) {
   try {
     const data = JSON.parse(jsonString);
-    
-    if (!data.tables || !data.tables.shifts || !data.tables.shiftTypes) {
+
+    if (!isValidBackup(data)) {
       throw new Error('Ungültiges Backup-Format');
     }
 
-    await db.transaction('rw', db.shifts, db.shiftTypes, async () => {
-      // Clear existing data
-      await db.shifts.clear();
-      await db.shiftTypes.clear();
-
-      // Import data
-      await db.shifts.bulkAdd(data.tables.shifts);
-      await db.shiftTypes.bulkAdd(data.tables.shiftTypes);
-    });
+    await restoreBackup(data);
 
     markLocalModified();
-    
+
     return { success: true };
   } catch (error) {
     console.error('Import failed:', error);

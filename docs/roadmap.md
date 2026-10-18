@@ -38,6 +38,7 @@ Erweiterung um intelligente Features und Exporte.
   *Entscheidung: Google Drive wurde als primäre Cloud-Lösung gewählt (Vorteile gegenüber iCloud: Kostenlos für Entwickler, plattformübergreifend für Android/iOS/Web und einfache Freigabe von `.ics`-Dateien).*
   - **Backup & Sync:** Serverlose Synchronisation der App-Daten über das versteckte Google Drive Anwendungsdatenverzeichnis (`appDataFolder`).
   - **Kalender-Abonnement (.ics):** Generierung einer iCalendar-Datei (`.ics`) im regulären Google Drive des Nutzers mit öffentlichem Freigabelink zur Einbindung in Outlook, Apple Calendar oder Google Calendar. Automatische Neuerstellung bei Datenänderungen.
+- **Dienstplan-Import per Foto/PDF:** Papier- oder PDF-Dienstplan fotografieren bzw. hochladen; die App erkennt nur die eigene Zeile und trägt die Schichten nach Bestätigung ein. Anforderungen: [PRD](prd/dienstplan-import.md), Entscheidungen: [ADRs](adr/).
 - **Rufbereitschaft:** Möglichkeit spezielle Rufbereitschafts-Schichten anzulegen.
 - **Smart-Checkout:** Automatisches Erkennen des Schichtendes über den Gerätestandort beim Verlassen des Arbeitsortes (Heimweg-Erkennung).
 - **Export-Funktionen:** Export des Plans als PDF oder Text für Messenger-Dienste.
