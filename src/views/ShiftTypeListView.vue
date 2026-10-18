@@ -34,6 +34,15 @@
                   </span>
                 </p>
               </ion-label>
+              <!-- erstes Dienstplan-Kürzel; bei mehreren liegt optisch ein zweites Etikett dahinter -->
+              <span
+                v-if="type.codes?.length"
+                slot="end"
+                class="code-label"
+                :class="{ multiple: type.codes.length > 1 }"
+                :title="type.codes.join(', ')"
+                :aria-label="`Kürzel: ${type.codes.join(', ')}`"
+              >{{ compactCode(type.codes[0]) }}</span>
               <div slot="end" :style="{ backgroundColor: type.color, width: '20px', height: '20px', borderRadius: '50%' }"></div>
             </ion-item>
 
@@ -168,9 +177,36 @@ const deleteShiftType = async (id: number) => {
 };
 
 onIonViewWillEnter(loadShiftTypes);
+
+// Kombinationen platzsparend ohne Leerzeichen anzeigen („N01+B11+F02“)
+const compactCode = (code: string) => code.replace(/\s*\+\s*/g, '+');
 </script>
 
 <style scoped>
+.code-label {
+  --label-border: var(--ion-color-step-400, #999999);
+  display: inline-block;
+  margin-right: 10px;
+  padding: 2px 8px;
+  border: 1px solid var(--label-border);
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  color: var(--ion-text-color);
+  background: var(--ion-item-background, var(--ion-background-color, #fff));
+}
+
+/* Mehrere Kürzel: ein zweites Etikett scheint links dahinter hervor (nur CSS: der erste Schatten in
+   Hintergrundfarbe verdeckt die Innenfläche, der zweite zeichnet den versetzten Rand) */
+.code-label.multiple {
+  margin-left: 4px;
+  box-shadow:
+    -4px 0 0 -1px var(--ion-item-background, var(--ion-background-color, #fff)),
+    -4px 0 0 0 var(--label-border);
+}
+
 .split-shift-badge,
 .night-standby-badge {
   margin-left: 4px;

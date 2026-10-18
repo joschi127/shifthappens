@@ -1,5 +1,10 @@
 <template>
   <div class="region-selector">
+    <ion-segment :value="mode" class="view-mode" @ionChange="setMode($event.detail.value as ViewMode)">
+      <ion-segment-button value="names"><ion-label>Namen</ion-label></ion-segment-button>
+      <ion-segment-button value="block"><ion-label>Zeile</ion-label></ion-segment-button>
+      <ion-segment-button value="full"><ion-label>Bild</ion-label></ion-segment-button>
+    </ion-segment>
     <div
       ref="wrapper"
       class="stage"
@@ -25,20 +30,17 @@
       ></div>
       <canvas v-show="dragging !== null" ref="loupe" class="loupe" :class="loupeSide" width="140" height="140"></canvas>
     </div>
-    <div class="view-toggle">
-      <ion-button size="small" fill="clear" @click="toggleView">{{ zoomed ? 'Ganzes Bild zeigen' : 'Auf Bereich zoomen' }}</ion-button>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { IonButton } from '@ionic/vue';
+import { IonLabel, IonSegment, IonSegmentButton } from '@ionic/vue';
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import type { Point, Quad } from '../../import/geometry';
 import type { Raster } from '../../import/raster';
 
 const props = defineProps<{ image: Raster; corners: Quad }>();
-const emit = defineEmits<{ (e: 'update:corners', value: Quad): void }>();
+const emit = defineEmits<{ (e: 'update:corners', value: Quad): void; (e: 'tap', point: Point): void }>();
 
 const wrapper = ref<HTMLDivElement | null>(null);
 const canvas = ref<HTMLCanvasElement | null>(null);
@@ -46,23 +48,33 @@ const loupe = ref<HTMLCanvasElement | null>(null);
 const dragging = ref<number | null>(null);
 const handleLabels = ['Ecke oben links', 'Ecke oben rechts', 'Ecke unten rechts', 'Ecke unten links'];
 
-// Sichtbarer Ausschnitt (Bildkoordinaten): Bereich um die Ecken mit Rand oder das ganze Bild.
-// Der Ausschnitt darf über das Bild hinausgehen (grauer Rand), damit Ecken am Bildrand nie direkt am
-// Bildschirmrand liegen und sich mit dem Finger greifen lassen.
-const zoomed = ref(true);
+// Sichtbarer Ausschnitt (Bildkoordinaten). Der Ausschnitt darf über das Bild hinausgehen (grauer Rand), damit
+// Ecken am Bildrand nie direkt am Bildschirmrand liegen und sich mit dem Finger greifen lassen.
+// - names: Namensspalte und erste Tage über die ganze Bildhöhe, groß genug, um die eigene Person anzutippen
+// - block: der markierte Block über die ganze Tabellenbreite (links und rechts prüfen, Ecken fein justieren)
+// - full:  das ganze Bild
+type ViewMode = 'names' | 'block' | 'full';
+const mode = ref<ViewMode>('names');
 const view = ref({ x: 0, y: 0, w: 1, h: 1 });
 const fitView = () => {
   const { width, height } = props.image;
-  if (!zoomed.value) {
+  const xs = props.corners.map(p => p[0]), ys = props.corners.map(p => p[1]);
+  const bw = Math.max(...xs) - Math.min(...xs), bh = Math.max(...ys) - Math.min(...ys);
+  if (mode.value === 'full') {
     const pad = Math.max(width, height) * 0.06;
     view.value = { x: -pad, y: -pad, w: width + 2 * pad, h: height + 2 * pad };
     return;
   }
-  const xs = props.corners.map(p => p[0]), ys = props.corners.map(p => p[1]);
-  const bw = Math.max(...xs) - Math.min(...xs), bh = Math.max(...ys) - Math.min(...ys);
-  const mx = bw * 0.1 + 20, my = Math.max(bh * 0.6, bw * 0.12) + 20;
-  const x = Math.min(...xs) - mx, y = Math.min(...ys) - my;
-  view.value = { x, y, w: Math.max(...xs) + mx - x, h: Math.max(...ys) + my - y };
+  if (mode.value === 'names') {
+    const pad = height * 0.03;
+    const x = Math.min(...xs) - bw * 0.25 - 20;
+    view.value = { x, y: -pad, w: Math.min(...xs) + bw * 0.12 - x, h: height + 2 * pad };
+    return;
+  }
+  // links mehr Rand, damit die Namensspalte zum Antippen sichtbar ist
+  const mxLeft = bw * 0.22 + 20, mxRight = bw * 0.08 + 20, my = Math.max(bh * 0.6, bw * 0.12) + 20;
+  const x = Math.min(...xs) - mxLeft, y = Math.min(...ys) - my;
+  view.value = { x, y, w: Math.max(...xs) + mxRight - x, h: Math.max(...ys) + my - y };
 };
 
 const draw = () => {
@@ -87,7 +99,7 @@ onMounted(draw);
 watch(() => props.image, () => nextTick(draw));
 // Wurden die Ecken von außen gesetzt (z. B. automatische Suche), den Ausschnitt neu anpassen
 watch(() => props.corners, () => { if (dragging.value === null) nextTick(draw); });
-const toggleView = () => { zoomed.value = !zoomed.value; draw(); };
+const setMode = (value: ViewMode) => { mode.value = value; draw(); };
 
 const handleStyle = ([x, y]: Point) => ({
   left: `${((x - view.value.x) / view.value.w) * 100}%`,
@@ -116,12 +128,15 @@ const drawLoupe = ([x, y]: Point) => {
 
 // Die dem Finger nächstgelegene Ecke greifen (Ecken liegen auf dem Smartphone teils dicht beieinander)
 let grabOffset: Point = [0, 0];
+// Tippen ohne Ecke: Punkt melden (die Ansicht setzt daraus die Zeile), sofern sich der Finger kaum bewegt hat
+let tapStart: { x: number; y: number; point: Point } | null = null;
 const startDrag = (event: PointerEvent) => {
   const p = toImage(event);
   const scale = view.value.w / wrapper.value!.clientWidth;
   const distances = props.corners.map(c => Math.hypot(c[0] - p[0], c[1] - p[1]) / scale);
   const nearest = distances.indexOf(Math.min(...distances));
-  if (distances[nearest] > 48) return;
+  if (distances[nearest] > 48) { tapStart = { x: event.clientX, y: event.clientY, point: p }; return; }
+  tapStart = null;
   dragging.value = nearest;
   grabOffset = [props.corners[nearest][0] - p[0], props.corners[nearest][1] - p[1]];
   wrapper.value!.setPointerCapture(event.pointerId);
@@ -137,7 +152,11 @@ const drag = (event: PointerEvent) => {
   drawLoupe(next[dragging.value]);
 };
 
-const endDrag = () => { dragging.value = null; };
+const endDrag = (event: PointerEvent) => {
+  dragging.value = null;
+  if (tapStart && event.type === 'pointerup' && Math.hypot(event.clientX - tapStart.x, event.clientY - tapStart.y) < 10) emit('tap', tapStart.point);
+  tapStart = null;
+};
 </script>
 
 <style scoped>
@@ -146,8 +165,13 @@ const endDrag = () => { dragging.value = null; };
   padding: 0 16px;
 }
 
+.view-mode {
+  margin-bottom: 8px;
+}
+
 .stage {
   position: relative;
+  overflow: hidden;
   width: 100%;
   touch-action: none;
   user-select: none;
@@ -207,8 +231,4 @@ const endDrag = () => { dragging.value = null; };
 .loupe.left { left: 8px; }
 .loupe.right { right: 8px; }
 
-.view-toggle {
-  display: flex;
-  justify-content: flex-end;
-}
 </style>

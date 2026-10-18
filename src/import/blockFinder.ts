@@ -3,7 +3,7 @@
  * Name per Texterkennung, Tagesspalten per Ausgleichsgerade durch die Tageszahlen, Grenzen per Gitterlinien.
  * Das Ergebnis ist ein Vorschlag; der Nutzer bestätigt oder korrigiert die Ecken.
  */
-import { Quad, insideImage, quadSlice, warpQuad } from './geometry';
+import { Point, Quad, insideImage, quadSlice, warpQuad } from './geometry';
 import { charactersFor, isFreeCode, normalizeReading } from './codeReading';
 import { OcrEngine, OcrWord } from './ocr';
 import { Raster, binarize, cropScaled, luminanceAt, removeGridLines, rotate180, rotate90, rowsOf } from './raster';
@@ -114,6 +114,27 @@ export function findBlock(img: Raster, words: OcrWord[], options: BlockFinderOpt
   const name = findName(words, options.rosterNames);
   const cols = fitDayColumns(words);
   if (!name || !cols) return null;
+  const block = blockFromAnchor(img, cols, { kind: 'name', y0: name.y0, y1: name.y1 }, options);
+  return block && { corners: block.corners, partialName: name.partial };
+}
+
+/**
+ * Block an der Stelle, an der der Nutzer in seine Dienstzeile getippt hat (y in Bildkoordinaten).
+ * Spalten aus den Tageszahlen, Oberkante = nächste deutliche Linie über dem Tipp, Rest wie bei der Namenssuche.
+ * Liefert null, wenn die Tageszahlen nicht lesbar sind.
+ */
+export function findBlockAt(img: Raster, words: OcrWord[], tap: Point, options: BlockFinderOptions): AnchoredBlock | null {
+  const cols = fitDayColumns(words);
+  return cols && blockFromAnchor(img, cols, { kind: 'tap', x: tap[0], y: tap[1] }, options);
+}
+
+// fromNameColumn: Ober- und Unterkante stammen aus der Namensspalte und sind damit sicher die Personengrenzen
+export interface AnchoredBlock { corners: Quad; fromNameColumn: boolean }
+
+type Anchor = { kind: 'name'; y0: number; y1: number } | { kind: 'tap'; x: number; y: number };
+
+function blockFromAnchor(img: Raster, cols: NonNullable<ReturnType<typeof fitDayColumns>>, anchor: Anchor,
+                         options: BlockFinderOptions): AnchoredBlock | null {
   const { colX, colY } = cols;
   const last = options.days;
   const cw = (colX(last) - colX(1)) / (last - 1);
@@ -157,22 +178,67 @@ export function findBlock(img: Raster, words: OcrWord[], options: BlockFinderOpt
     const v: number[] = []; for (let k = 0; k < 20; k++) v.push(lineH(leftV(y) + cw * (k + 0.5), y + slope * k));
     return v.sort((a, b) => a - b)[10];
   };
+  /**
+   * Linien der Namensspalte (links der Tagesspalten, ohne die schmale Spalte mit D/S/B/A/E): Die Namenszelle
+   * reicht über alle Unterzeilen einer Person, ihre waagerechten Linien sind also genau die Grenzen zwischen
+   * Personen. Liefert die Linie über und unter y (Höhe auf Höhe von Tag 1), sofern beide deutlich sind.
+   */
+  const personSpanAt = (tapX: number, tapY: number): { top: number; bottom: number } | null => {
+    const y = tapY - slope * (tapX - colX(1)) / cw;
+    const x1 = colX(1) - cw * 1.1, x0 = Math.max(4, colX(1) - cw * 4.5);
+    if (x1 - x0 < cw) return null;
+    const xs = Array.from({ length: 8 }, (_, k) => x0 + (x1 - x0) * (k + 0.5) / 8);
+    const nameLine = (yy: number) => {
+      const v = xs.map(x => lineH(x, yy + slope * (x - colX(1)) / cw)).sort((a, b) => a - b);
+      return v[v.length >> 1];
+    };
+    const yFrom = Math.max(4, Math.round(colY(1) + cw * 0.3)), yTo = img.height - 5;
+    const prof: Peak[] = [];
+    for (let yy = yFrom; yy <= yTo; yy++) prof.push({ y: yy, s: nameLine(yy) });
+    const maxLine = Math.max(...prof.map(p => p.s));
+    let lines = prof.filter((p, i) => p.s > maxLine * 0.2 && prof.slice(Math.max(0, i - 4), i + 5).every(q => q.s <= p.s)).map(p => p.y);
+    if (lines.length < 2) return null;
+
+    // Personenblöcke sind ungefähr gleich hoch: Blockhöhe aus den Linienabständen schätzen (sonst Seitenverhältnis)
+    const prior = options.blockRatio * cw;
+    const gaps = lines.slice(1).map((l, i) => l - lines[i]).filter(g => g >= prior * 0.6 && g <= prior * 1.6).sort((a, b) => a - b);
+    const period = gaps.length ? gaps[gaps.length >> 1] : prior;
+    // Doppellinien (dicker Rand, z. B. unter dem Tabellenkopf) zur oberen Linie zusammenfassen
+    lines = lines.filter((l, i) => i === 0 || l - lines[i - 1] >= period * 0.25);
+    // Linien innerhalb eines Namensfelds verwerfen: sie teilen einen Block normaler Höhe
+    for (let i = 1; i < lines.length - 1; i++) {
+      const outer = lines[i + 1] - lines[i - 1];
+      if (outer >= period * 0.8 && outer <= period * 1.25) { lines.splice(i, 1); i--; }
+    }
+    // Fehlende Grenzen (zu schwach in der Namensspalte) ergänzen, an den Linien im Tagesbereich eingerastet
+    const snap = (yy: number) => nearestStrong(peaks.filter(p => Math.abs(p.y - yy) <= period * 0.2), yy) ?? yy;
+    const filled: number[] = [lines[0]];
+    for (const l of lines.slice(1)) {
+      const prev = filled[filled.length - 1], n = Math.round((l - prev) / period);
+      for (let k = 1; k < n; k++) filled.push(snap(prev + (l - prev) * k / n));
+      filled.push(l);
+    }
+    // Jede Grenze von Tag 1 aus waagerecht bis zur Stelle des Tipps verfolgen (bei Perspektive ist die Neigung
+    // weiter unten im Bild eine andere als in der Kopfzeile) und dort mit dem Tipp vergleichen
+    const atTap = (l: number) => tapX <= colX(1) ? l : traceH(colX(1), tapX, l)(tapX);
+    const candidates = filled.filter(l => Math.abs(l - y) <= period * 2.5);
+    const above = candidates.filter(l => atTap(l) <= tapY + 2).pop(), below = candidates.find(l => atTap(l) > tapY + 4);
+    if (above === undefined || below === undefined || below - above < cw * 0.4 || below - above > period * 1.6) return null;
+    return { top: Math.round(above), bottom: Math.round(below) };
+  };
+  const blockHeight = options.blockRatio * cw;
+  const subRowHeight = blockHeight / (options.subRows ?? 1);
+  const [from, to] = anchor.kind === 'name'
+    ? [anchor.y0 - 40, anchor.y1 + 200]
+    : [anchor.y - blockHeight - 40, anchor.y + blockHeight * 1.3 + 40];
   const profile: { y: number; s: number }[] = [];
-  for (let y = Math.round(name.y0 - 40); y <= Math.round(name.y1 + 200); y++) profile.push({ y, s: strength(y) });
+  for (let y = Math.max(0, Math.round(from)); y <= Math.min(img.height - 1, Math.round(to)); y++) profile.push({ y, s: strength(y) });
   const maxS = Math.max(...profile.map(p => p.s));
   const peaks = profile.filter((p, i) => p.s > maxS * 0.08 && profile.slice(Math.max(0, i - 4), i + 5).every(q => q.s <= p.s));
-  // Oberkante: bei Unterzeilen die stärkste Linie über dem Namen (Trennlinie zwischen Personen; nur Vorname
-  // erkannt korrigiert refineBlock), bei einer Zeile je Person die nächstgelegene deutliche Linie (die stärkste
-  // läge dort oft eine Zeile zu hoch)
-  // (bis zu einem guten Drittel der Namenshöhe, die Schrift berührt die Linie manchmal fast). „Deutlich“ heißt
-  // mindestens 60 % der stärksten Linie, sonst zählen waagerechte Buchstabenstriche der Dienstzeile mit.
-  const above = peaks.filter(p => p.y <= name.y0 + Math.max(4, (name.y1 - name.y0) * 0.35) && p.y >= name.y0 - cw);
-  const strongest = Math.max(0, ...above.map(p => p.s));
-  const topCandidate = ((options.subRows ?? 1) > 1
-    ? [...above].sort((a, b) => b.s - a.s)[0]
-    : above.filter(p => p.s >= strongest * 0.6).sort((a, b) => b.y - a.y)[0]) ?? peaks[0];
-  if (!topCandidate) return null;
-  const top = topCandidate.y;
+  // Beim Antippen: Grenzen der Person aus der Namensspalte (dort gibt es nur Linien zwischen Personen)
+  const span = anchor.kind === 'tap' ? personSpanAt(anchor.x, anchor.y) : null;
+  const top = span ? span.top : anchor.kind === 'name' ? topBelowName(peaks, anchor, cw, options) : topAboveTap(peaks, anchor.y, subRowHeight);
+  if (top === undefined) return null;
 
   // Spaltenzahl prüfen (unterhalb der Oberkante, wo kaum Schrift die Linien stört): zwischen den Rändern
   // müssen Tage + 1 senkrechte Linien liegen. Ist es eine mehr, sitzt ein Rand eine Spalte zu weit außen
@@ -190,12 +256,17 @@ export function findBlock(img: Raster, words: OcrWord[], options: BlockFinderOpt
     if (lines.length === last + 2) {
       const firstWidth = lines[1] - lines[0], lastWidth = lines[lines.length - 1] - lines[lines.length - 2];
       const innerFirst = lines[2] - lines[1], innerLast = lines[lines.length - 2] - lines[lines.length - 3];
-      if (Math.abs(lastWidth / innerLast - 1) >= Math.abs(firstWidth / innerFirst - 1)) rightV = traceV(top, lines[lines.length - 2]);
-      else leftV = traceV(top, lines[1]);
+      // nur eingreifen, wenn die Randspalte deutlich anders breit ist als eine Tagesspalte (sonst ist die
+      // zusätzliche „Linie“ eher die Kante einer dunkel hinterlegten Zelle)
+      const devLast = Math.abs(lastWidth / innerLast - 1), devFirst = Math.abs(firstWidth / innerFirst - 1);
+      if (Math.max(devLast, devFirst) > 0.35) {
+        if (devLast >= devFirst) rightV = traceV(top, lines[lines.length - 2]);
+        else leftV = traceV(top, lines[1]);
+      }
     }
   }
-  const expectedBottom = top + options.blockRatio * cw;
-  const bottom = nearestStrong(peaks.filter(p => Math.abs(p.y - expectedBottom) <= cw * 0.3), expectedBottom) ?? Math.round(expectedBottom);
+  const expectedBottom = span ? span.bottom : top + blockHeight;
+  const bottom = span ? span.bottom : nearestStrong(peaks.filter(p => Math.abs(p.y - expectedBottom) <= cw * 0.3), expectedBottom) ?? Math.round(expectedBottom);
   const topH = traceH(leftV(top), rightV(top), top);
 
   // Unterkante rechts nahe "rechte Oberkante + Blockhöhe" suchen (Median über die letzten 10 Spalten)
@@ -210,8 +281,33 @@ export function findBlock(img: Raster, words: OcrWord[], options: BlockFinderOpt
   const yLeftTop = topH(leftV(top));
   return {
     corners: [[leftV(yLeftTop), yLeftTop], [xr, topH(xr)], [rightV(bottomRight), bottomRight], [leftV(bottom), bottom]],
-    partialName: name.partial
+    fromNameColumn: span !== null
   };
+}
+
+type Peak = { y: number; s: number };
+
+// Oberkante über dem Namen: bei Unterzeilen die stärkste Linie (Trennlinie zwischen Personen; nur Vorname
+// erkannt korrigiert refineBlock), bei einer Zeile je Person die nächstgelegene deutliche Linie (die stärkste
+// läge dort oft eine Zeile zu hoch). Gesucht bis zu einem guten Drittel der Namenshöhe, die Schrift berührt die
+// Linie manchmal fast. „Deutlich“ heißt mindestens 60 % der stärksten Linie, sonst zählen waagerechte
+// Buchstabenstriche der Dienstzeile mit.
+function topBelowName(peaks: Peak[], name: { y0: number; y1: number }, cw: number, options: BlockFinderOptions): number | undefined {
+  const above = peaks.filter(p => p.y <= name.y0 + Math.max(4, (name.y1 - name.y0) * 0.35) && p.y >= name.y0 - cw);
+  const strongest = Math.max(0, ...above.map(p => p.s));
+  const candidate = ((options.subRows ?? 1) > 1
+    ? [...above].sort((a, b) => b.s - a.s)[0]
+    : above.filter(p => p.s >= strongest * 0.6).sort((a, b) => b.y - a.y)[0]) ?? peaks[0];
+  return candidate?.y;
+}
+
+// Oberkante über einem Tipp in die Dienstzeile: die nächste deutliche Linie darüber (höchstens etwas mehr als
+// eine Unterzeile entfernt). Getippt wurde in die Dienstzeile, also ist das ihre Oberkante = Oberkante des Blocks.
+// Liegt der Tipp eine Unterzeile daneben, korrigiert refineBlock anhand der Dienstkürzel.
+function topAboveTap(peaks: Peak[], tapY: number, subRowHeight: number): number | undefined {
+  const near = peaks.filter(p => p.y <= tapY + 2 && p.y >= tapY - subRowHeight * 1.3);
+  const strongest = Math.max(0, ...peaks.filter(p => Math.abs(p.y - tapY) <= subRowHeight * 3).map(p => p.s));
+  return near.filter(p => p.s >= strongest * 0.4).sort((a, b) => b.y - a.y)[0]?.y;
 }
 
 /**
@@ -320,28 +416,41 @@ export async function refineBlock(img: Raster, corners: Quad, engine: OcrEngine,
 }
 
 /**
+ * Block an einem angetippten Punkt (Dienstzeile) bestimmen und inhaltlich nachprüfen. words: Texterkennung des
+ * ganzen Bildes (wird aus der automatischen Suche wiederverwendet, sonst neu gelesen).
+ */
+export async function locateBlockAt(img: Raster, engine: OcrEngine, tap: Point, options: BlockFinderOptions,
+                                    words?: OcrWord[]): Promise<Quad | null> {
+  const allWords = words ?? (await engine.recognize(img, { mode: 'sparse' })).words;
+  const block = findBlockAt(img, allWords, tap, options);
+  if (!block) return null;
+  // Grenzen aus der Namensspalte sind verlässlicher als die inhaltliche Nachprüfung
+  return block.fromNameColumn ? block.corners : refineBlock(img, block.corners, engine, options);
+}
+
+/**
  * Eigenen Block suchen, bei Bedarf im gedrehten Bild: wie fotografiert, um 90° in beide Richtungen (Querformat-Pläne
  * werden oft im Hochformat fotografiert) und auf dem Kopf. Zuerst schnell in allen Drehungen, den langsameren
  * zweiten Durchgang (Namensspalte Feld für Feld) nur in den Drehungen, in denen die meisten Tageszahlen lesbar sind.
  * Liefert das (ggf. gedrehte) Bild mit dem Treffer.
  */
 export async function locateOwnBlock(img: Raster, engine: OcrEngine, options: BlockFinderOptions,
-                                     onRotate?: () => void): Promise<{ image: Raster; match: BlockMatch } | null> {
+                                     onRotate?: () => void): Promise<{ image: Raster; match: BlockMatch; words: OcrWord[] } | null> {
   const candidates: (() => Raster)[] = [() => img, () => rotate90(img, 'cw'), () => rotate90(img, 'ccw'), () => rotate180(img)];
-  const refined = async (image: Raster, match: BlockMatch) =>
-    ({ image, match: { ...match, corners: await refineBlock(image, match.corners, engine, options) } });
+  const refined = async (image: Raster, match: BlockMatch, words: OcrWord[]) =>
+    ({ image, words, match: { ...match, corners: await refineBlock(image, match.corners, engine, options) } });
   const tried: { image: Raster; words: OcrWord[]; days: number }[] = [];
   for (const [index, candidate] of candidates.entries()) {
     if (index > 0) onRotate?.();
     const image = candidate();
     const { words } = await engine.recognize(image, { mode: 'sparse' });
     const match = findBlock(image, words, options);
-    if (match) return refined(image, match);
+    if (match) return refined(image, match, words);
     tried.push({ image, words, days: fitDayColumns(words)?.found ?? 0 });
   }
   for (const { image, words } of tried.filter(t => t.days >= 3).sort((a, b) => b.days - a.days).slice(0, 2)) {
     const match = await findBlockInNameColumn(image, words, engine, options);
-    if (match) return refined(image, match);
+    if (match) return refined(image, match, words);
   }
   return null;
 }

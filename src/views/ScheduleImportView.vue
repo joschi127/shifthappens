@@ -84,9 +84,20 @@
         <p class="ion-padding-horizontal step-text">
           {{ regionMessage }}
         </p>
-        <!-- während der Suche ausgeblendet, sonst erscheinen kurz Platzhalter-Ecken -->
-        <region-selector v-if="!busy" v-model:corners="corners" :image="image"></region-selector>
+        <!-- während der automatischen Suche ausgeblendet, sonst erscheinen kurz Platzhalter-Ecken; beim Antippen
+             sichtbar lassen, damit die Ansicht nicht springt -->
+        <region-selector v-if="!searching" v-model:corners="corners" :image="image" @tap="selectRowAt"></region-selector>
         <div class="ion-padding">
+          <div class="person-row">
+            <ion-button fill="outline" size="small" :disabled="busy" @click="movePerson(-1)">
+              <ion-icon slot="start" :icon="chevronUpOutline"></ion-icon>
+              Person darüber
+            </ion-button>
+            <ion-button fill="outline" size="small" :disabled="busy" @click="movePerson(1)">
+              <ion-icon slot="start" :icon="chevronDownOutline"></ion-icon>
+              Person darunter
+            </ion-button>
+          </div>
           <div class="rotate-row">
             <ion-button fill="outline" size="small" @click="rotate('ccw')">
               <ion-icon slot="start" :icon="refreshOutline" class="mirror"></ion-icon>
@@ -214,7 +225,7 @@ import {
   IonList, IonItem, IonLabel, IonNote, IonSelect, IonSelectOption, IonProgressBar, IonModal, IonCheckbox,
   toastController, alertController, onIonViewWillEnter
 } from '@ionic/vue';
-import { addOutline, cameraOutline, chevronDownOutline, imageOutline, informationCircleOutline, refreshOutline } from 'ionicons/icons';
+import { addOutline, cameraOutline, chevronDownOutline, chevronUpOutline, imageOutline, informationCircleOutline, refreshOutline } from 'ionicons/icons';
 import { computed, onUnmounted, ref, shallowRef } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { db, ImportTemplate, ShiftType } from '../db';
@@ -225,7 +236,8 @@ import { Quad } from '../import/geometry';
 import { Raster, rotate90 } from '../import/raster';
 import { ImageInputError, loadImageFile } from '../import/imageInput';
 import { getBrowserEngine, releaseBrowserEngine } from '../import/browserEngine';
-import { BlockMatch, locateBlock, locateOwnBlock } from '../import/blockFinder';
+import { BlockMatch, locateBlock, locateBlockAt, locateOwnBlock } from '../import/blockFinder';
+import { OcrWord } from '../import/ocr';
 import { recognizeOwnBlock } from '../import/recognizeOwnBlock';
 import { DayProposal, DayReading, ProposalItem, ignoreCodeIn, rematchUnknown, resolveShifts } from '../import/resolveShifts';
 import { ImportPlan, PlannedShift, planImport } from '../import/importPlan';
@@ -298,11 +310,14 @@ const fileInput = ref<HTMLInputElement | null>(null);
 const image = shallowRef<Raster | null>(null);
 const corners = ref<Quad>([[0, 0], [1, 0], [1, 1], [0, 1]]);
 const regionMessage = ref('');
+const searching = ref(false);
 
+// Ohne Treffer: schmaler Streifen über die ganze Breite, damit beim Zoomen das ganze Blatt zum Antippen sichtbar ist
 const defaultCorners = (img: Raster): Quad => {
-  const mx = img.width * 0.15, my = img.height * 0.4;
-  return [[mx, my], [img.width - mx, my], [img.width - mx, my + img.height * 0.12], [mx, my + img.height * 0.12]];
+  const mx = img.width * 0.04, my = img.height * 0.46;
+  return [[mx, my], [img.width - mx, my], [img.width - mx, my + img.height * 0.08], [mx, my + img.height * 0.08]];
 };
+const TAP_HINT = 'Tippe auf deinen Namen oder irgendwo in deine Zeile, die App richtet den Bereich über die ganze Tabellenbreite aus.';
 
 const toast = async (message: string, color = 'medium') => {
   const t = await toastController.create({ message, duration: 3500, color });
@@ -338,11 +353,10 @@ const findOwnBlock = async (tryRotations = true) => {
   if (!image.value) return;
   if (!rosterNames.value.length) {
     corners.value = defaultCorners(image.value);
-    regionMessage.value = 'Ziehe die vier Ecken auf deinen Block: von der ersten bis zur letzten Tagesspalte, alle Zeilen deiner Person, ohne Namensspalte. '
-      + 'Tipp: Trägst du in den Einstellungen deinen „Name im Dienstplan“ ein, sucht die App den Block künftig selbst.';
+    regionMessage.value = TAP_HINT + ' Tipp: Trägst du in den Einstellungen deinen „Name im Dienstplan“ ein, sucht die App deine Zeile selbst.';
     return;
   }
-  busy.value = true; busyText.value = 'Deine Zeile wird gesucht (beim ersten Mal werden die Erkennungsdaten geladen) …'; progress.value = null;
+  busy.value = true; searching.value = true; busyText.value = 'Deine Zeile wird gesucht (beim ersten Mal werden die Erkennungsdaten geladen) …'; progress.value = null;
   try {
     const engine = await getBrowserEngine();
     const options = { rosterNames: rosterNames.value, days: daysInMonth.value, blockRatio: format.value.blockRatio ?? 2.9,
@@ -350,26 +364,75 @@ const findOwnBlock = async (tryRotations = true) => {
     let match: BlockMatch | null = null;
     if (tryRotations) {
       const found = await locateOwnBlock(image.value, engine, options, () => { busyText.value = 'Deine Zeile wird im gedrehten Bild gesucht …'; });
-      if (found) { image.value = found.image; match = found.match; }
+      if (found) {
+        image.value = found.image; match = found.match;
+        imageWords = { image: found.image, words: found.words }; // fürs Antippen wiederverwenden
+      }
     } else {
       match = await locateBlock(image.value, engine, options);
     }
     if (match) {
       corners.value = match.corners;
-      regionMessage.value = match.partialName
-        ? 'Deine Zeile wurde anhand eines Namensteils gefunden. Bitte prüfen und die Ecken bei Bedarf verschieben.'
-        : 'Deine Zeile wurde gefunden. Bitte prüfen: Die Ecken sollen den Block von der ersten bis zur letzten Tagesspalte umfassen.';
+      regionMessage.value = (match.partialName ? 'Deine Zeile wurde anhand eines Namensteils gefunden. ' : 'Deine Zeile wurde gefunden. ')
+        + 'Falsche Person? Tippe auf die richtige oder nutze „Person darüber/darunter“.';
     } else {
       corners.value = defaultCorners(image.value);
-      regionMessage.value = 'Deine Zeile wurde nicht automatisch gefunden. Ist das Bild richtig herum? Sonst bitte drehen oder die Ecken selbst setzen.';
+      regionMessage.value = 'Deine Zeile wurde nicht automatisch gefunden. ' + TAP_HINT + ' Steht das Bild auf dem Kopf oder quer, vorher drehen.';
     }
   } catch (error) {
     console.error(error);
     corners.value = defaultCorners(image.value);
-    regionMessage.value = 'Die automatische Suche ist fehlgeschlagen. Bitte die Ecken selbst setzen.';
+    regionMessage.value = 'Die automatische Suche ist fehlgeschlagen. ' + TAP_HINT;
+  } finally {
+    searching.value = false;
+    busy.value = false;
+  }
+};
+
+// ---------- Zeile antippen ----------
+// Texterkennung des ganzen Bildes (Tageszahlen) für das Antippen merken, solange sich das Bild nicht ändert
+let imageWords: { image: Raster; words: OcrWord[] } | null = null;
+const wordsOf = async (img: Raster) => {
+  if (imageWords?.image !== img) {
+    const engine = await getBrowserEngine();
+    imageWords = { image: img, words: (await engine.recognize(img, { mode: 'sparse' })).words };
+  }
+  return imageWords.words;
+};
+
+const blockOptions = () => ({
+  rosterNames: rosterNames.value, days: daysInMonth.value, blockRatio: format.value.blockRatio ?? 2.9,
+  subRows: format.value.subRows ?? 1, dutyCodes: vocabulary().dutyOnly
+});
+
+// Getippt auf Namen oder Zeile: ganzen Block über die volle Tabellenbreite setzen (Grenzen aus der Namensspalte)
+const selectRowAt = async (point: Quad[number]) => {
+  if (!image.value || busy.value) return;
+  busy.value = true; busyText.value = 'Zeile wird ausgerichtet …'; progress.value = null;
+  try {
+    const img = image.value;
+    const engine = await getBrowserEngine();
+    const found = await locateBlockAt(img, engine, point, blockOptions(), await wordsOf(img));
+    if (found) {
+      corners.value = found;
+      regionMessage.value = 'Zeile übernommen. Falsche Person? Tippe auf die richtige oder nutze „Person darüber/darunter“.';
+    } else {
+      regionMessage.value = 'Die Zeile konnte hier nicht ausgerichtet werden (Tageszahlen nicht lesbar?). Bitte erneut tippen oder die Ecken selbst setzen.';
+    }
+  } catch (error) {
+    console.error(error);
+    regionMessage.value = 'Das Ausrichten ist fehlgeschlagen. Bitte die Ecken selbst setzen.';
   } finally {
     busy.value = false;
   }
+};
+
+// Block um eine Person nach oben oder unten verschieben: Mitte des Blocks um eine Blockhöhe versetzt antippen
+const movePerson = async (direction: -1 | 1) => {
+  const [tl, tr, br, bl] = corners.value;
+  const height = ((bl[1] - tl[1]) + (br[1] - tr[1])) / 2;
+  const center: Quad[number] = [(tl[0] + tr[0] + br[0] + bl[0]) / 4, (tl[1] + tr[1] + br[1] + bl[1]) / 4 + direction * height];
+  await selectRowAt(center);
 };
 
 const reset = () => { image.value = null; step.value = 'source'; proposals.value = []; plan.value = null; };
@@ -679,6 +742,16 @@ const save = async () => {
 
 .region-step .step-text {
   margin-top: 12px;
+}
+
+.person-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.person-row ion-button {
+  flex: 1;
 }
 
 .rotate-row {

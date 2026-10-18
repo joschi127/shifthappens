@@ -150,6 +150,20 @@ Getestet mit frischen Handyfotos eines Ausdrucks von Variante 5, Person „Werni
   - Eine KI-gestützte Erkennung, laut [ADR 0001](../adr/0001-texterkennung-lokal-vor-cloud.md) bisher nur als Rückfall vorgesehen, könnte Planaufbau, eigene Zeile und Kürzel ohne formatspezifische Regeln erfassen. Sie hätte aber Folgen für Datenschutz (Bild verlässt das Gerät), Kosten und Offline-Fähigkeit.
 - **Nächste Entscheidung:** Lokale Erkennung weiter optimieren, so lassen wie sie ist (nur für vorbereitete Formate), oder den KI-Weg vorziehen. Gehört gegebenenfalls in ein neues ADR, das ADR 0001 ergänzt.
 
+## Zeile antippen (18.10.2026)
+
+Antwort auf den ersten Smartphone-Test: Die Auswahl über vier Ecken war am Handy zu schwierig, vor allem links und rechts.
+
+- **Nur noch die Höhe wählen:** Der Nutzer tippt auf seinen Namen (große Namenszelle) oder irgendwo in seine Zeile. Die App setzt daraus den ganzen Block über die volle Tabellenbreite. Links und rechts bestimmt sie selbst aus den Tageszahlen im Kopf und den Gitterlinien. Tisch oder Hintergrund spielen keine Rolle, ein Zuschneiden vorab ist nicht nötig.
+- **Grenzen aus der Namensspalte:** Die Namenszelle reicht über alle Unterzeilen einer Person. Ihre waagerechten Linien sind daher genau die Grenzen zwischen Personen, die Blockhöhe muss nicht geschätzt werden.
+  - Doppellinien (dicker Rand) werden zusammengefasst, Linien innerhalb eines Namensfelds verworfen. Fehlende, zu schwache Grenzen werden im Abstand der übrigen Blöcke ergänzt und an den Linien im Tagesbereich eingerastet.
+  - Jede Grenze wird von Tag 1 waagerecht bis zur Stelle des Tipps verfolgt, weil bei schrägen Fotos die Neigung im Bild variiert.
+  - Ohne verwertbare Namensspalte gilt die nächste deutliche Linie über dem Tipp, mit inhaltlicher Nachprüfung.
+- **Bedienung:**
+  - **Ansichten:** Die Bereichsauswahl hat drei Ansichten. „Namen“ (Standard) zeigt die Namensspalte und die ersten Tage groß über die ganze Höhe, jede Person ist gut antippbar. „Zeile“ zeigt den Block über die volle Breite, zum Prüfen und für die Feinkorrektur der Ecken. „Bild“ zeigt das ganze Foto.
+  - **Person darüber/darunter:** verschiebt den Block um eine Person. Die Texterkennung der automatischen Suche wird wiederverwendet, ein Tipp dauert im Browser etwa 0,2 s.
+- **Regressionstest:** Je Bild und Person werden zwei absichtlich ungenaue Tipps simuliert (oberer bzw. unterer Teil der Dienstzeile, verschiedene Stellen der Breite). Ergebnis: 82 von 84 Tipps treffen den richtigen Block auf höchstens 0,4 Spaltenbreiten genau (Referenz in `src/import/blockFinder.baseline.json`, Einträge „(antippen)“).
+
 ## Einschränkungen in V1
 
 - Uhrzeiten aus dem Plan werden nicht gelesen. Es gelten die Zeiten der Vorlage.
@@ -162,7 +176,7 @@ Getestet mit frischen Handyfotos eines Ausdrucks von Variante 5, Person „Werni
 ## Offene Punkte
 
 - **Weiteres Vorgehen bei der Erkennung** nach dem ersten Smartphone-Test (siehe oben): lokale Erkennung weiter optimieren, auf vorbereitete Formate beschränken oder KI-gestützte Erkennung vorziehen.
-- **Bereichsauswahl am Handy** ist zu schwierig. Ideen: eine Zeile antippen statt vier Ecken ziehen, Ecken nur grob setzen und automatisch an die Gitterlinien einrasten, oder größere Griffe mit einem Versatz unter dem Finger.
+- **Bereichsauswahl am Handy:** umgesetzt als Antippen der Zeile (siehe „Zeile antippen“), noch auf dem Handy zu testen.
 - `////` und `D03` sind geklärt (außerhalb des Umfangs, siehe oben).
 
 ## Ideen

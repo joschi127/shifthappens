@@ -4,6 +4,9 @@
  * fotografiert und bei Bedarf gedreht. Treffer = richtige Drehung und Ecken höchstens 0,4 Spaltenbreiten
  * von den hinterlegten entfernt (bei stark gewölbten Blättern genügt die richtige Drehung).
  *
+ * Zusätzlich wird das Antippen der Dienstzeile geprüft (wie in der App nach dem Drehen): je Person zwei absichtlich
+ * ungenaue Tipps (oberer bzw. unterer Teil der Dienstzeile, verschiedene Stellen der Breite).
+ *
  * Die Suche ist ein Vorschlag, den der Nutzer bestätigt, und noch nicht in allen Bildern genau (PRD).
  * Daher gilt wie bei der Erkennung eine Referenz: Treffer je Bild mindestens wie in blockFinder.baseline.json
  * (neu schreiben mit UPDATE_BASELINE=1 npm run test:recognition).
@@ -11,10 +14,10 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
-import { quadSlice } from './geometry';
+import { Quad, applyHomography, homography, quadSlice } from './geometry';
 import { OcrEngine, OcrRequest } from './ocr';
 import { Raster } from './raster';
-import { locateOwnBlock } from './blockFinder';
+import { locateBlockAt, locateOwnBlock } from './blockFinder';
 import { IMPORT_FORMATS } from './formats';
 import { isFreeCode } from './codeReading';
 import { collectExamples, createTestEngine, decode, loadExpected, root, rotateBy } from '../testing/recognitionExamples';
@@ -88,5 +91,40 @@ describe.each(examples.map(e => [e.isLocal ? `local/${e.image}` : e.image, e] as
     measured[key] = hits;
     if (misses.length) console.info(`Blocksuche ${key}: ${misses.join('; ')}`);
     if (key in baseline && process.env.UPDATE_BASELINE !== '1') expect(hits, misses.join('; ')).toBeGreaterThanOrEqual(baseline[key]);
+  });
+
+  it('findet den Block beim Antippen der Dienstzeile (mindestens wie in der Referenz)', async () => {
+    cache.clear();
+    const data = loadExpected(example.expectedFile);
+    const subRows = data.unterzeilen ? Object.keys(data.unterzeilen).length : 1;
+    const format = IMPORT_FORMATS.find(f => (f.subRows ?? 1) === subRows)!;
+    const persons = data.zeilen.length, days = data.tage;
+    const dutyCodes = [...new Set<string>([...data.zeilen.flatMap((z: any) => z.codes), 'S'])].filter(c => !isFreeCode(c));
+    const upright = rotateBy(decode(path.join(example.dir, example.image)), example.rotate);
+    const words = (await cachingEngine.recognize(upright, { mode: 'sparse' })).words;
+    const options = { rosterNames: [], days, blockRatio: format.blockRatio!, subRows, dutyCodes };
+    const pointIn = (quad: Quad, u: number, v: number) => applyHomography(homography([[0, 0], [1, 0], [1, 1], [0, 1]], quad), [u, v]);
+
+    const misses: string[] = [];
+    let hits = 0;
+    for (const p of [...new Set([0, persons >> 1, persons - 1])]) {
+      const label = example.isLocal ? `Person ${p + 1}` : data.zeilen[p].name ?? data.zeilen[p].kuerzel;
+      const expected = quadSlice(example.corners, p / persons, (p + 1) / persons);
+      const dutyRow = quadSlice(expected, 0, 1 / subRows);
+      for (const [u, v] of [[0.3, 0.75], [0.7, 0.25]]) {
+        const corners = await locateBlockAt(upright, cachingEngine, pointIn(dutyRow, u, v), options, words);
+        if (!corners) { misses.push(`${label} (${u}/${v}): nichts gefunden`); continue; }
+        if (!example.curved) {
+          const colWidth = Math.hypot(expected[1][0] - expected[0][0], expected[1][1] - expected[0][1]) / days;
+          const deviation = Math.max(...expected.map(([x, y], i) => Math.hypot(corners[i][0] - x, corners[i][1] - y))) / colWidth;
+          if (deviation > 0.4) { misses.push(`${label} (${u}/${v}): Ecken ${deviation.toFixed(2)} Spaltenbreiten daneben`); continue; }
+        }
+        hits++;
+      }
+    }
+    const tapKey = `${key} (antippen)`;
+    measured[tapKey] = hits;
+    if (misses.length) console.info(`Antippen ${key}: ${misses.join('; ')}`);
+    if (tapKey in baseline && process.env.UPDATE_BASELINE !== '1') expect(hits, misses.join('; ')).toBeGreaterThanOrEqual(baseline[tapKey]);
   });
 });
